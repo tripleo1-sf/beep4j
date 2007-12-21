@@ -1,0 +1,13 @@
+<projectDescription>
+  <name>beep4j</name>
+  <comment>beep4j is an opensource Java implementation of BEEP (RFC3080 and RFC3081).</comment>
+  <projects/>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
