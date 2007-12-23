@@ -2,7 +2,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.sf.beep4j</groupId>
-  <artifactId>beep4j-examples</artifactId>
+  <artifactId>beep4j-examples-echo</artifactId>
   <packaging>jar</packaging>
   <name>beep4j-examples</name>
   <version>0.2.0-SNAPSHOT</version>
