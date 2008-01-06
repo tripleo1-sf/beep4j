@@ -15,6 +15,9 @@
  */
 package net.sf.beep4j.examples.echo.server;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.SessionHandler;
 import net.sf.beep4j.StartChannelRequest;
@@ -30,7 +33,9 @@ import net.sf.beep4j.ext.SessionHandlerAdapter;
  * @author Simon Raess
  */
 public class EchoServerSessionHandler extends SessionHandlerAdapter {
-
+	
+	private ExecutorService executorService = Executors.newCachedThreadPool();
+	
 	/**
 	 * Registers both the {@link EchoProfileHandler#PROFILE} and the
 	 * {@link OneToManyEchoProfileHandler#PROFILE}.
@@ -39,6 +44,7 @@ public class EchoServerSessionHandler extends SessionHandlerAdapter {
 	public void connectionEstablished(StartSessionRequest s) {
 		s.registerProfile(EchoProfileHandler.PROFILE);
 		s.registerProfile(OneToManyEchoProfileHandler.PROFILE);
+		s.registerProfile(EchoEchoProfileHandler.PROFILE);
 	}
 
 	/**
@@ -57,6 +63,10 @@ public class EchoServerSessionHandler extends SessionHandlerAdapter {
 			startup.selectProfile(
 					profile,
 					new OneToManyEchoProfileHandler(size));
+		} else if (startup.hasProfile(EchoEchoProfileHandler.PROFILE)) {
+			startup.selectProfile(
+					startup.getProfile(EchoEchoProfileHandler.PROFILE),
+					new EchoEchoProfileHandler(executorService));
 		}
 	}
 

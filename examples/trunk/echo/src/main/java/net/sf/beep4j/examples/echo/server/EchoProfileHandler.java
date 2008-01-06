@@ -39,7 +39,7 @@ public class EchoProfileHandler extends ChannelHandlerAdapter {
 	 * Copies the input from the received message to the reply.
 	 * 
 	 * @param message the received message
-	 * @param reply the objec used to send a reply
+	 * @param reply the object used to send a reply
 	 */
 	@Override
 	public void messageReceived(Message message, Reply reply) {

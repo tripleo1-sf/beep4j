@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -37,7 +38,9 @@ import net.sf.beep4j.Channel;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.ProfileInfo;
+import net.sf.beep4j.Reply;
 import net.sf.beep4j.Session;
+import net.sf.beep4j.examples.echo.server.EchoEchoProfileHandler;
 import net.sf.beep4j.examples.echo.server.EchoProfileHandler;
 import net.sf.beep4j.examples.echo.server.OneToManyEchoProfileHandler;
 import net.sf.beep4j.ext.ChannelHandlerAdapter;
@@ -113,6 +116,28 @@ public class EchoClient extends SessionHandlerAdapter {
 				super.channelOpened(channel);
 				future.set(channel);
 			}
+			@Override
+			public void messageReceived(Message message, Reply reply) {
+				InputStream stream = message.getInputStream();
+				MessageBuilder builder = createMessageBuilder();
+				OutputStream os = builder.getOutputStream();
+				writeTo(stream, os);
+				reply.sendRPY(builder.getMessage());
+			}
+			private void writeTo(InputStream is, OutputStream os) {
+				try {
+					byte[] buf = new byte[1024];
+					int len;
+					
+					while ((len = is.read(buf)) != -1) {
+						os.write(buf, 0, len);
+					}
+				
+					os.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
 		});
 		return future;
 	}
@@ -128,20 +153,21 @@ public class EchoClient extends SessionHandlerAdapter {
 		Session session = client.connect().get();
 		
 		// use the two available echo profiles
-		ProfileInfo[] profile = new ProfileInfo[2];
+		ProfileInfo[] profile = new ProfileInfo[3];
 		profile[0] = new ProfileInfo(OneToManyEchoProfileHandler.PROFILE, "128");
 		profile[1] = new ProfileInfo(EchoProfileHandler.PROFILE);
+		profile[2] = new ProfileInfo(EchoEchoProfileHandler.PROFILE);
 		
 		final String message = loadMessage("rfc3080.txt");
 		
 		// open some channels using the profiles specified above
 		// do some work in parallel (using executor service), the Session is
 		// be thread-safe
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < 6; i++) {
 			List<Future<String>> futures = new ArrayList<Future<String>>();
-			EchoSender[] sender = new EchoSender[2];
+			EchoSender[] sender = new EchoSender[3];
 			for (int j = 0; j < sender.length; j++) {
-				sender[j] = new EchoSender(client, profile[j % 2], message);
+				sender[j] = new EchoSender(client, profile[j % 3], message);
 				futures.add(j, executor.submit(sender[j]));
 			}
 			for (int j = 0; j < sender.length; j++) {
