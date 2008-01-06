@@ -44,7 +44,7 @@ public class EchoProfileHandler extends ChannelHandlerAdapter {
 	@Override
 	public void messageReceived(Message message, Reply reply) {
 		InputStream stream = message.getInputStream();
-		MessageBuilder builder = reply.createMessageBuilder();
+		MessageBuilder builder = createMessageBuilder();
 		OutputStream os = builder.getOutputStream();
 		writeTo(stream, os);
 		reply.sendRPY(builder.getMessage());

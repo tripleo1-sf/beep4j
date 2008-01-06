@@ -53,7 +53,7 @@ public class OneToManyEchoProfileHandler extends ChannelHandlerAdapter {
 		int remaining = buffer.remaining();
 		
 		while (remaining > 0) {
-			MessageBuilder builder = reply.createMessageBuilder();
+			MessageBuilder builder = createMessageBuilder();
 			int size = Math.min(blockSize, remaining);
 			buffer.limit(buffer.position() + size);
 			builder.getContentBuffer(size).put(buffer);
