@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+  <skin>
+    <groupId>org.apache.maven.skins</groupId>
+    <artifactId>maven-default-skin</artifactId>
+    <version>1.0</version>
+  </skin>
+  <bannerLeft>
+    <name>${project.name}</name>
+    <href>http://beep4j.sourceforge.net/</href>
+  </bannerLeft>
+  
+  <poweredBy>
+    <logo name="Hosted on SourceForge.net" href="http://sourceforge.net"
+          img="http://sflogo.sourceforge.net/sflogo.php?group_id=182141&amp;type=4"/>
+    <logo name="Build with Maven 2" href="http://maven.apache.org/"
+          img="images/logos/maven-feather.png"/>
+  </poweredBy>
+  
+  <body>
+     <!--<links>
+       <item name="ApacheDS" href="http://directory.apache.org/subprojects/apacheds/index.html"/>
+       <item name="Naming" href="http://directory.apache.org/projects/naming/index.html"/>
+       <item name="MINA (Network Layer)" href="http://directory.apache.org/subprojects/mina/index.html"/>
+       <item name="Directory" href="http://directory.apache.org/index.html"/>
+    </links>-->
+ 
+    <menu name="beep4j">
+      <item name="Overview" href="/index.html"/>
+      <!--<item name="Features" href="/features.html"/>
+      <item name="Testimonials" href="/testimonials.html"/>
+      <item name="Getting Started" href="/getting_started.html"/>
+      <item name="Downloads" href="http://www.apache.org/dyn/closer.cgi/directory/mina/"/>
+      <item name="F.A.Q" href="/faq.html"/>
+      <item name="Roadmap" href="/roadmap.html"/>
+      <item name="Changes" href="http://issues.apache.org/jira/browse/DIRMINA?report=com.atlassian.jira.plugin.system.project:changelog-panel&amp;subset=-1"/>
+      <item name="History" href="/history.html"/>-->
+    </menu>
+    
+    <menu name="Developers">
+      <item name="Sourceforge" href="http://sourceforge.net/projects/beep4j/"/>
+    </menu>
+    
+    ${reports}
+        
+  </body>
+</project>

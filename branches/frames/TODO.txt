@@ -1,0 +1,86 @@
+- consider decorator style implementation for filtering on Channel interface
+  - first, the state must be considered
+  - then the chain can be called
+  - so the decorator must be based somehow on the state classes?
+
+- exception handling on client classes (handlers)
+  - SessionHandler, ChannelHandler, and ReplyHandler
+  - allow handlers to throw any exception?
+  - catch exceptions and
+    - terminate session?
+    - delegate back to the handlers? e.g. ChannelHandler#exceptionCaught?
+  
+- Channel
+  - add state to channel?
+  - Channel#setAttribute(name,value)
+  - same for Session?
+
+- logging
+  - add context: remote peer address, ...
+
+- introduce thread pool to provide inter channel asynchrony
+  - receiving messages
+    - channel receives messages synchronously
+    - channel receives replies synchronously
+  
+    while (true) {
+      waitForPromotion()
+      ChannelBuffer buf = fetchBuffer()
+      giveUpLead()
+      processEvents(buf)
+      follow()
+    }
+
+- support Content-Transfer-Encoding: base64, (quoted-printable)
+
+- GenericSessionHandler -> SessionHandler
+  - factory:ChannelHandlerFactory
+  - advertisedProfiles:String[]
+
+  - connectionEstablished registers profiles
+  - channelStartRequested selects first supported profile according to list
+  
+  - maybe desired, wait for user feedback
+
+  
+- logging
+  - net.sf.beep4j.transport: logging of transport layer events
+  - net.sf.beep4j.transport.DATA: all data passing through the transport layer
+
+
+- next tasks
+
+  - change internals to frame handling
+    - API changes
+    - support assembling messages in ChannelHandler or ChannelFilter
+    - support preemptive ERR replies (reply to incoming message)
+      - i.e. do not call ChannelHandler.messageReceived when premature ERR was created
+      - see also section 2.6.3 of the BEEP specification
+    - supporting receiving preemptive ERR replies seems not possible
+      - message will already be waiting for transport in the ChannelController
+      - there is no way to stop that (feedback from session to stream layer...)
+    - ReplyHandlerWrapper must be a bit more conservative about completing replies
+  - allow termination of Session (i.e. dropping TCP connection)
+  - filtering
+    - review ChannelFilter interface
+    - write LoggingChannelFilter, just for fun
+  - logging
+    - context (channel number, remote peer, ...)
+    - low-level BEEP logging
+ 
+  
+ChannelHandler
++receivedMSG(message:Object,reply:Reply)
+
+ReplyHandler
++receivedRPY(message:Object)
++receivedERR(message:Object)
++receivedANS(message:Object)
++receivedNUL(message:Object)
+
+- message is either a Frame, a Message, or an arbitrary application object
+
+- create BeepFrameSequencingValidator
+- replaces MessageAssembler
+- validates the various BEEP sequencing constraints
+- ChannelFilter / ChannelHandler / ReplyHandler can be sure that those constraints hold
