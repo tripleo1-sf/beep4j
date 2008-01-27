@@ -20,7 +20,7 @@ public interface InternalChannelFilterChain extends ChannelFilterChain {
 	
 	void fireFilterChannelOpened(Channel channel);
 	
-	void fireFilterMessageReceived(Message message, Reply reply);
+	void fireFilterMessageReceived(Object message, Reply reply);
 	
 	void fireFilterChannelCloseRequested(CloseChannelRequest request);
 	
@@ -28,11 +28,11 @@ public interface InternalChannelFilterChain extends ChannelFilterChain {
 	
 	// --> filtering ReplyHandler methods <--
 	
-	void fireFilterReceivedRPY(Message message);
+	void fireFilterReceivedRPY(Object message);
 
-	void fireFilterReceivedERR(Message message);
+	void fireFilterReceivedERR(Object message);
 	
-	void fireFilterReceivedANS(Message message);
+	void fireFilterReceivedANS(Object message);
 	
 	void fireFilterReceivedNUL();
 	

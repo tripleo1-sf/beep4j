@@ -98,13 +98,13 @@ public class ManagementProfileImpl implements ManagementProfile {
 		Message message = builder.createStart(createMessageBuilder(), channelNumber, infos);
 		channel.sendMessage(message, new ManagementReplyHandler() {
 			
-			public void receivedRPY(Message message) {
-				ProfileInfo profile = parser.parseProfile(message);
+			public void receivedRPY(Object message) {
+				ProfileInfo profile = parser.parseProfile((Message) message);
 				callback.channelCreated(profile);
 			}
 			
-			public void receivedERR(Message message) {
-				BEEPError error = parser.parseError(message);
+			public void receivedERR(Object message) {
+				BEEPError error = parser.parseError((Message) message);
 				callback.channelFailed(error.getCode(), error.getMessage());
 			}
 			
@@ -115,13 +115,13 @@ public class ManagementProfileImpl implements ManagementProfile {
 		Message message = builder.createClose(createMessageBuilder(), channelNumber, 200);
 		channel.sendMessage(message, new ManagementReplyHandler() {
 		
-			public void receivedRPY(Message message) {
-				parser.parseOk(message);
+			public void receivedRPY(Object message) {
+				parser.parseOk((Message) message);
 				callback.closeAccepted();
 			}
 		
-			public void receivedERR(Message message) {
-				BEEPError error = parser.parseError(message);
+			public void receivedERR(Object message) {
+				BEEPError error = parser.parseError((Message) message);
 				callback.closeDeclined(error.getCode(), error.getMessage());
 			}
 		
@@ -196,7 +196,7 @@ public class ManagementProfileImpl implements ManagementProfile {
 	 */
 	private static abstract class ManagementReplyHandler implements ReplyHandler {
 		
-		public final void receivedANS(Message message) {
+		public final void receivedANS(Object message) {
 			throw new ProtocolException("ANS is not a valid response to a channel management request");		
 		}
 		

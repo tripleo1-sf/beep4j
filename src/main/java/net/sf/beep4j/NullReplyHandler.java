@@ -23,11 +23,11 @@ package net.sf.beep4j;
  */
 public class NullReplyHandler implements ReplyHandler {
 
-	public void receivedANS(Message message) {
+	public void receivedANS(Object message) {
 
 	}
 
-	public void receivedERR(Message message) {
+	public void receivedERR(Object message) {
 
 	}
 
@@ -35,7 +35,7 @@ public class NullReplyHandler implements ReplyHandler {
 
 	}
 
-	public void receivedRPY(Message message) {
+	public void receivedRPY(Object message) {
 
 	}
 

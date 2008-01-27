@@ -17,8 +17,8 @@ package net.sf.beep4j.internal.session;
 
 import net.sf.beep4j.Channel;
 import net.sf.beep4j.ChannelHandler;
-import net.sf.beep4j.Message;
 import net.sf.beep4j.internal.management.CloseCallback;
+import net.sf.beep4j.internal.stream.FrameHandler;
 
 /**
  * Interface implemented by channels that contains methods only visible
@@ -26,19 +26,9 @@ import net.sf.beep4j.internal.management.CloseCallback;
  * 
  * @author Simon Raess
  */
-public interface InternalChannel extends Channel {
+public interface InternalChannel extends Channel, FrameHandler {
 	
 	void channelOpened(ChannelHandler channelHandler);
-	
-	void receiveMSG(int messageNumber, Message message);
-	
-	void receiveRPY(int messageNumber, Message message);
-	
-	void receiveERR(int messageNumber, Message message);
-	
-	void receiveANS(int messageNumber, int answerNumber, Message message);
-	
-	void receiveNUL(int messageNumber);
 	
 	/**
 	 * Tests whether this channel is in the Alive state.

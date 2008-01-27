@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.ProtocolException;
 import net.sf.beep4j.internal.stream.DataHeader;
-import net.sf.beep4j.internal.stream.Frame;
+import net.sf.beep4j.internal.stream.FrameImpl;
 import net.sf.beep4j.internal.stream.MessageType;
 import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 import net.sf.beep4j.internal.util.Assert;
@@ -51,7 +51,7 @@ final class DefaultChannelController implements ChannelController {
 	
 	private final SlidingWindow senderWindow;
 	
-	private final LinkedList<Frame> frames = new LinkedList<Frame>();
+	private final LinkedList<FrameImpl> frames = new LinkedList<FrameImpl>();
 	
 	private final Transport transport;
 	
@@ -82,7 +82,7 @@ final class DefaultChannelController implements ChannelController {
 
 		seqno += buffer.remaining();
 		
-		Frame frame = new Frame(header, buffer);
+		FrameImpl frame = new FrameImpl(header, buffer);
 		enqueueFrame(frame);
 		sendFrames(transport);
 	}
@@ -97,7 +97,7 @@ final class DefaultChannelController implements ChannelController {
 		
 		seqno += buffer.remaining();
 		
-		Frame frame = new Frame(header, buffer);
+		FrameImpl frame = new FrameImpl(header, buffer);
 		enqueueFrame(frame);
 		sendFrames(transport);
 	}
@@ -112,7 +112,7 @@ final class DefaultChannelController implements ChannelController {
 		
 		seqno += buffer.remaining();
 		
-		Frame frame = new Frame(header, buffer);
+		FrameImpl frame = new FrameImpl(header, buffer);
 		enqueueFrame(frame);
 		sendFrames(transport);
 	}
@@ -124,7 +124,7 @@ final class DefaultChannelController implements ChannelController {
 				channel, messageNumber, false, 
 				seqno, 0);
 		
-		Frame frame = new Frame(header, ByteBuffer.allocate(0));
+		FrameImpl frame = new FrameImpl(header, ByteBuffer.allocate(0));
 		enqueueFrame(frame);
 		sendFrames(transport);
 	}
@@ -139,7 +139,7 @@ final class DefaultChannelController implements ChannelController {
 		
 		seqno += buffer.remaining();
 		
-		Frame frame = new Frame(header, buffer);
+		FrameImpl frame = new FrameImpl(header, buffer);
 		enqueueFrame(frame);
 		int count = sendFrames(transport);
 		LOG.debug("sendRPY caused " + count + " frames to be sent");
@@ -190,13 +190,13 @@ final class DefaultChannelController implements ChannelController {
 		return ASCII_CHARSET.encode(buf.toString());
 	}
 
-	private void enqueueFrame(Frame frame) {
+	private void enqueueFrame(FrameImpl frame) {
 		frames.addLast(frame);
 	}
 	
 	protected int sendFrames(Transport transport) {
 		int count = 0;
-		Frame frame;
+		FrameImpl frame;
 		
 		while ((frame = nextFrame()) != null) {
 			LOG.debug("send frame " + frame.getHeader());
@@ -209,11 +209,11 @@ final class DefaultChannelController implements ChannelController {
 		return count;
 	}
 	
-	private Frame nextFrame() {
+	private FrameImpl nextFrame() {
 		if (frames.isEmpty()) {
 			return null;
 		} else {
-			Frame frame = frames.removeFirst();
+			FrameImpl frame = frames.removeFirst();
 			
 			if (frame.getSize() <= senderWindow.remaining()) {
 				LOG.debug("sending frame unchanged (channel=" + channel + ")");
@@ -224,7 +224,7 @@ final class DefaultChannelController implements ChannelController {
 			} else if (senderWindow.remaining() >= MINIMUM_FRAME_SIZE) {
 				LOG.debug("split frame at position " + senderWindow.remaining()
 						+ " (channel=" + channel + ")");
-				Frame[] split = frame.split(senderWindow.remaining());
+				FrameImpl[] split = frame.split(senderWindow.remaining());
 				frames.addFirst(split[1]);
 				return split[0];
 			} else {

@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.ChannelHandlerFactory;
+import net.sf.beep4j.Frame;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.ProtocolException;
@@ -37,14 +38,14 @@ import net.sf.beep4j.internal.SessionListener;
 import net.sf.beep4j.internal.SessionManager;
 import net.sf.beep4j.internal.StartChannelResponse;
 import net.sf.beep4j.internal.TransportHandler;
-import net.sf.beep4j.internal.management.BEEPError;
 import net.sf.beep4j.internal.management.CloseCallback;
 import net.sf.beep4j.internal.management.Greeting;
+import net.sf.beep4j.internal.management.ManagementChannel;
 import net.sf.beep4j.internal.management.ManagementProfile;
 import net.sf.beep4j.internal.management.ManagementProfileImpl;
 import net.sf.beep4j.internal.management.StartChannelCallback;
 import net.sf.beep4j.internal.stream.BeepStream;
-import net.sf.beep4j.internal.stream.MessageHandler;
+import net.sf.beep4j.internal.stream.FrameHandler;
 import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.internal.util.IntegerSequence;
 import net.sf.beep4j.internal.util.Sequence;
@@ -64,8 +65,8 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Simon Raess
  */
-public class SessionImpl 
-		implements MessageHandler, SessionManager, InternalSession, TransportHandler {
+public class SessionImpl
+		implements FrameHandler, SessionManager, InternalSession, TransportHandler {
 	
 	private static final int MANAGEMENT_CHANNEL = 0;
 
@@ -75,7 +76,7 @@ public class SessionImpl
 	
 	private final Map<Integer,InternalChannel> channels = new HashMap<Integer,InternalChannel>();
 	
-	private final ManagementProfile channelManagementProfile;
+	private final ManagementProfile managementProfile;
 	
 	private final BeepStream beepStream;
 	
@@ -114,7 +115,7 @@ public class SessionImpl
 		
 		addSessionListener(beepStream);
 				
-		this.channelManagementProfile = createManagementProfile(initiator);
+		this.managementProfile = createManagementProfile(initiator);
 		initChannelManagementProfile();
 		
 		this.channelNumberSequence = new IntegerSequence(initiator ? 1 : 2, 2);
@@ -151,8 +152,8 @@ public class SessionImpl
 	}
 
 	protected void initChannelManagementProfile() {
-		InternalChannel channel = new ChannelImpl(this, null, MANAGEMENT_CHANNEL, filterChainBuilder, null);
-		ChannelHandler channelHandler = channelManagementProfile.createChannelHandler(this, channel);
+		InternalChannel channel = new ManagementChannel(managementProfile, this, filterChainBuilder, null);
+		ChannelHandler channelHandler = managementProfile.createChannelHandler(this, channel);
 		registerChannel(MANAGEMENT_CHANNEL, channel);
 		channel.channelOpened(channelHandler);
 	}
@@ -188,12 +189,6 @@ public class SessionImpl
 				buffer.append(message);
 			}
 			LOG.debug(buffer.toString());
-		}
-	}
-	
-	private void info(String message) {
-		if (LOG.isInfoEnabled()) {
-			LOG.info(traceInfo() + message);
 		}
 	}
 	
@@ -374,7 +369,7 @@ public class SessionImpl
 		Assert.notNull("callback", callback);
 		lock();
 		try {
-			channelManagementProfile.closeChannel(channelNumber, new CloseCallback() {
+			managementProfile.closeChannel(channelNumber, new CloseCallback() {
 				public void closeDeclined(int code, String message) {
 					callback.closeDeclined(code, message);
 				}
@@ -418,6 +413,24 @@ public class SessionImpl
 	}
 	
 	/*
+	 * This method is invoked be the management profile when the session start
+	 * is accepted (i.e. a greeting is received).
+	 */
+	public void sessionStartAccepted(Greeting greeting) {
+		this.greeting = greeting;
+		checkInitialAliveTransition();
+	}
+	
+	/*
+	 * This method is invoked by the management profile when the session start
+	 * is declined (e.g. because the other peer is unavailable).
+	 */
+	public void sessionStartDeclined() {
+		setCurrentState(deadState);
+		beepStream.closeTransport();
+	}
+	
+	/*
 	 * This method is invoked by the ChannelManagement profile when a session
 	 * close request is received.
 	 */
@@ -429,54 +442,54 @@ public class SessionImpl
 	// --> end of SessionManager methods <--
 	
 	
-	// --> start of MessageHandler methods <-- 
+	// --> start of FrameHandler methods <-- 
 
-	public final void receiveMSG(int channelNumber, int messageNumber, Message message) {
+	public final void receiveMSG(Frame frame) {
 		lock();
 		try {
-			getCurrentState().receiveMSG(channelNumber, messageNumber, message);
-		} finally {
-			unlock();
-		}
-	}
-
-	public final void receiveANS(int channelNumber, int messageNumber, int answerNumber, Message message) {
-		lock();
-		try {
-			getCurrentState().receiveANS(channelNumber, messageNumber, answerNumber, message);
-		} finally {
-			unlock();
-		}
-	}
-	
-	public final void receiveNUL(int channelNumber, int messageNumber) {
-		lock();
-		try {
-			getCurrentState().receiveNUL(channelNumber, messageNumber);
-		} finally {
-			unlock();
-		}
-	}
-
-	public final void receiveERR(int channelNumber, int messageNumber, Message message) {
-		lock();
-		try {
-			getCurrentState().receiveERR(channelNumber, messageNumber, message);
+			getCurrentState().receiveMSG(frame);
 		} finally {
 			unlock();
 		}
 	}
 		
-	public final void receiveRPY(int channelNumber, int messageNumber, Message message) {
+	public final void receiveRPY(Frame frame) {
 		lock();
 		try {
-			getCurrentState().receiveRPY(channelNumber, messageNumber, message);
+			getCurrentState().receiveRPY(frame);
 		} finally {
 			unlock();
 		}
 	}
 	
-	// --> end of MessageHandler methods <--
+	public final void receiveERR(Frame frame) {
+		lock();
+		try {
+			getCurrentState().receiveERR(frame);
+		} finally {
+			unlock();
+		}
+	}
+	
+	public final void receiveANS(Frame frame) {
+		lock();
+		try {
+			getCurrentState().receiveANS(frame);
+		} finally {
+			unlock();
+		}
+	}
+	
+	public final void receiveNUL(Frame frame) {
+		lock();
+		try {
+			getCurrentState().receiveNUL(frame);
+		} finally {
+			unlock();
+		}
+	}
+	
+	// --> end of FrameHandler methods <--
 	
 	/*
 	 * Notifies the ChannelManagementProfile about this event. The
@@ -519,7 +532,7 @@ public class SessionImpl
 	 * inherently state dependent. Some actions are not supported in
 	 * certain states.
 	 */
-	protected static interface SessionState extends MessageHandler {
+	protected static interface SessionState extends FrameHandler {
 		
 		void connectionEstablished(SocketAddress address);
 		
@@ -614,36 +627,40 @@ public class SessionImpl
 			return StartChannelResponse.createCancelledResponse(550, "cannot start channel");
 		}
 
-		public void receiveANS(int channelNumber, int messageNumber, int answerNumber, Message message) {
+		public void receiveMSG(Frame frame) {
 			throw new IllegalStateException(
 					"internal error: unexpected method invocation in state <" + getName() + ">: "
-					+ "message ANS, channel=" + channelNumber 
-					+ ",message=" + messageNumber
-					+ ",answerNumber=" + answerNumber);
+					+ "message MSG, channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber());
 		}
 
-		public void receiveERR(int channelNumber, int messageNumber, Message message) {
+		public void receiveRPY(Frame frame) {
 			throw new IllegalStateException(
 					"internal error: unexpected method invocation in state <" + getName() + ">: "
-					+ "message ERR, channel=" + channelNumber + ",message=" + messageNumber);
+					+ "message RPY, channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber());
 		}
 
-		public void receiveMSG(int channelNumber, int messageNumber, Message message) {
+		public void receiveERR(Frame frame) {
 			throw new IllegalStateException(
 					"internal error: unexpected method invocation in state <" + getName() + ">: "
-					+ "message MSG, channel=" + channelNumber + ",message=" + messageNumber);
+					+ "message ERR, channel=" + frame.getChannelNumber()
+					+ ",message=" + frame.getMessageNumber());
 		}
 
-		public void receiveNUL(int channelNumber, int messageNumber) {
+		public void receiveANS(Frame frame) {
 			throw new IllegalStateException(
 					"internal error: unexpected method invocation in state <" + getName() + ">: "
-					+ "message NUL, channel=" + channelNumber + ",message=" + messageNumber);
+					+ "message ANS, channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber()
+					+ ",answerNumber=" + frame.getAnswerNumber());
 		}
 
-		public void receiveRPY(int channelNumber, int messageNumber, Message message) {
+		public void receiveNUL(Frame frame) {
 			throw new IllegalStateException(
 					"internal error: unexpected method invocation in state <" + getName() + ">: "
-					+ "message RPY, channel=" + channelNumber + ",message=" + messageNumber);
+					+ "message NUL, channel=" + frame.getChannelNumber()
+					+ ",message=" + frame.getMessageNumber());
 		}
 		
 		public void closeSession() {
@@ -680,47 +697,51 @@ public class SessionImpl
 			sessionHandler.connectionEstablished(request);
 			
 			if (request.isCancelled()) {
-				beepStream.sendERR(MANAGEMENT_CHANNEL, 0, channelManagementProfile.createSessionStartDeclined(request.getReplyCode(), request.getMessage()));
+				beepStream.sendERR(MANAGEMENT_CHANNEL, 0, managementProfile.createSessionStartDeclined(request.getReplyCode(), request.getMessage()));
 				setCurrentState(deadState);
 				beepStream.closeTransport();
 			} else {
-				beepStream.sendRPY(MANAGEMENT_CHANNEL, 0, channelManagementProfile.createGreeting(request.getProfiles()));
+				beepStream.sendRPY(MANAGEMENT_CHANNEL, 0, managementProfile.createGreeting(request.getProfiles()));
 			}
 		}
 		
-		public void receiveMSG(int channelNumber, int messageNumber, Message message) {
+		@Override
+		public void receiveMSG(Frame frame) {
 			throw new ProtocolException(
 					"first message in a session must be RPY or ERR on channel 0: "
-					+ "was MSG channel=" + channelNumber + ",message=" + messageNumber);
+					+ "was MSG channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber());
 		}
 		
-		public void receiveANS(int channelNumber, int messageNumber, int answerNumber, Message message) {
+		@Override
+		public void receiveANS(Frame frame) {
 			throw new ProtocolException(
 					"first message in a session must be RPY or ERR on channel 0: "
-					+ "was ANS channel=" + channelNumber + ",message=" + messageNumber);
+					+ "was ANS channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber()
+					+ ",answer=" + frame.getAnswerNumber());
 		}
 		
-		public void receiveNUL(int channelNumber, int messageNumber) {
+		@Override
+		public void receiveNUL(Frame frame) {
 			throw new ProtocolException(
 					"first message in a session must be RPY or ERR on channel 0: "
-					+ "was NUL channel=" + channelNumber + ",message=" + messageNumber);
+					+ "was NUL channel=" + frame.getChannelNumber() 
+					+ ",message=" + frame.getMessageNumber());
 		}
 		
-		public void receiveRPY(final int channelNumber, final int messageNumber, final Message message) {
-			validateMessage(channelNumber, messageNumber);
-			greeting = channelManagementProfile.receivedGreeting(message);
-			checkInitialAliveTransition();
+		@Override
+		public void receiveRPY(Frame frame) {
+			validateMessage(frame.getChannelNumber(), frame.getMessageNumber());
+			InternalChannel channel = getChannel(0);
+			channel.receiveRPY(frame);
 		}
 		
-		public void receiveERR(int channelNumber, int messageNumber, Message message) {
-			validateMessage(channelNumber, messageNumber);
-			BEEPError error = channelManagementProfile.receivedError(message);
-			
-			info("received error, session start failed: " + error.getCode() + ":" + error.getMessage());
-			
-			sessionHandler.sessionStartDeclined(error.getCode(), error.getMessage());
-			setCurrentState(deadState);
-			beepStream.closeTransport();
+		@Override
+		public void receiveERR(Frame frame) {
+			validateMessage(frame.getChannelNumber(), frame.getMessageNumber());
+			InternalChannel channel = getChannel(0);
+			channel.receiveERR(frame);
 		}
 
 		private void validateMessage(int channelNumber, int messageNumber) {
@@ -748,7 +769,7 @@ public class SessionImpl
 		@Override
 		public void startChannel(final ProfileInfo[] profiles, final ChannelHandlerFactory factory) {
 			final int channelNumber = getNextChannelNumber();
-			channelManagementProfile.startChannel(channelNumber, profiles, new StartChannelCallback() {
+			managementProfile.startChannel(channelNumber, profiles, new StartChannelCallback() {
 				public void channelCreated(ProfileInfo info) {
 					lock();
 					try {
@@ -839,40 +860,40 @@ public class SessionImpl
 		}
 		
 		@Override
-		public void receiveMSG(int channelNumber, int messageNumber, Message message) {			
-			InternalChannel channel = getChannel(channelNumber);
-			channel.receiveMSG(messageNumber, message);
-		}
-
-		@Override
-		public void receiveANS(int channelNumber, int messageNumber, int answerNumber, Message message) {
-			InternalChannel channel = getChannel(channelNumber);
-			channel.receiveANS(messageNumber, answerNumber, message);
+		public void receiveMSG(Frame frame) {			
+			InternalChannel channel = getChannel(frame.getChannelNumber());
+			channel.receiveMSG(frame);
 		}
 		
 		@Override
-		public void receiveNUL(int channelNumber, int messageNumber) {
-			InternalChannel channel = getChannel(channelNumber);
-			channel.receiveNUL(messageNumber);
+		public void receiveRPY(Frame frame) {
+			InternalChannel channel = getChannel(frame.getChannelNumber());
+			channel.receiveRPY(frame);
+		}
+		
+		@Override
+		public void receiveERR(Frame frame) {
+			InternalChannel channel = getChannel(frame.getChannelNumber());
+			channel.receiveERR(frame);
 		}
 
 		@Override
-		public void receiveERR(int channelNumber, int messageNumber, Message message) {
-			InternalChannel channel = getChannel(channelNumber);
-			channel.receiveERR(messageNumber, message);
+		public void receiveANS(Frame frame) {
+			InternalChannel channel = getChannel(frame.getChannelNumber());
+			channel.receiveANS(frame);
 		}
-
+		
 		@Override
-		public void receiveRPY(int channelNumber, int messageNumber, Message message) {
-			InternalChannel channel = getChannel(channelNumber);
-			channel.receiveRPY(messageNumber, message);
+		public void receiveNUL(Frame frame) {
+			InternalChannel channel = getChannel(frame.getChannelNumber());
+			channel.receiveNUL(frame);
 		}
 		
 		@Override
 		public void closeSession() {
 			// TODO: do not allow session close if there are still open channels
 			setCurrentState(closeInitiatedState);
-			channelManagementProfile.closeSession(new CloseCallback() {
+			managementProfile.closeSession(new CloseCallback() {
 				public void closeDeclined(int code, String message) {
 					Assert.holdsLock("session", sessionLock);
 					performClose();

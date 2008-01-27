@@ -15,7 +15,6 @@
  */
 package net.sf.beep4j.ext;
 
-import net.sf.beep4j.Message;
 import net.sf.beep4j.ReplyHandler;
 
 /**
@@ -27,11 +26,11 @@ import net.sf.beep4j.ReplyHandler;
  */
 public class ReplyHandlerAdapter implements ReplyHandler {
 
-	public void receivedANS(Message message) {
+	public void receivedANS(Object message) {
 		throw new UnsupportedOperationException();
 	}
 
-	public void receivedERR(Message message) {
+	public void receivedERR(Object message) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -39,7 +38,7 @@ public class ReplyHandlerAdapter implements ReplyHandler {
 		throw new UnsupportedOperationException();
 	}
 
-	public void receivedRPY(Message message) {
+	public void receivedRPY(Object message) {
 		throw new UnsupportedOperationException();
 	}
 

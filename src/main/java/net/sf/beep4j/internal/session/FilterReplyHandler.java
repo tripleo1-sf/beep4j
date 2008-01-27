@@ -15,7 +15,6 @@
  */
 package net.sf.beep4j.internal.session;
 
-import net.sf.beep4j.Message;
 import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.internal.FilterChainTargetHolder;
 import net.sf.beep4j.internal.util.Assert;
@@ -40,7 +39,7 @@ final class FilterReplyHandler implements ReplyHandler {
 		this.target = target;
 	}
 
-	public void receivedRPY(Message message) {
+	public void receivedRPY(Object message) {
 		FilterChainTargetHolder.setReplyHandler(target);
 		try {
 			filterChain.fireFilterReceivedRPY(message);
@@ -49,7 +48,7 @@ final class FilterReplyHandler implements ReplyHandler {
 		}
 	}
 	
-	public void receivedERR(Message message) {
+	public void receivedERR(Object message) {
 		FilterChainTargetHolder.setReplyHandler(target);
 		try {
 			filterChain.fireFilterReceivedERR(message);
@@ -58,7 +57,7 @@ final class FilterReplyHandler implements ReplyHandler {
 		}
 	}
 	
-	public void receivedANS(Message message) {
+	public void receivedANS(Object message) {
 		FilterChainTargetHolder.setReplyHandler(target);
 		try {
 			filterChain.fireFilterReceivedANS(message);

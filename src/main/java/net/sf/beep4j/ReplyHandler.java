@@ -26,12 +26,28 @@ package net.sf.beep4j;
 public interface ReplyHandler {
 	
 	/**
+	 * Invoked when a RPY response is received. This type of response
+	 * is also termed positiv reply.
+	 * 
+	 * @param message the received message
+	 */
+	void receivedRPY(Object message);
+	
+	/**
+	 * Invoked when an ERR response is received. This type of response
+	 * is also termed negativ reply.
+	 * 
+	 * @param message the received message
+	 */
+	void receivedERR(Object message);
+	
+	/**
 	 * Invoked when an ANS response is received. For a one-to-many
 	 * exchange style this method can be invoked 0 or more times.
 	 * 
 	 * @param message the received message
 	 */
-	void receivedANS(Message message);
+	void receivedANS(Object message);
 	
 	/**
 	 * Invoked when a NUL response is received. For a one-to-many
@@ -40,21 +56,5 @@ public interface ReplyHandler {
 	 * this method has been invoked.
 	 */
 	void receivedNUL();
-	
-	/**
-	 * Invoked when an ERR response is received. This type of response
-	 * is also termed negativ reply.
-	 * 
-	 * @param message the received message
-	 */
-	void receivedERR(Message message);
-	
-	/**
-	 * Invoked when a RPY response is received. This type of response
-	 * is also termed positiv reply.
-	 * 
-	 * @param message the received message
-	 */
-	void receivedRPY(Message message);
 	
 }

@@ -15,18 +15,23 @@
  */
 package net.sf.beep4j.internal.stream;
 
+import net.sf.beep4j.Frame;
+
 /**
  * Handler interface for frames parsed by the StreamParser.
  * 
  * @author Simon Raess
  */
 public interface FrameHandler {
-	
-	/**
-	 * Handle a single frame.
-	 * 
-	 * @param frame the Frame to be processed
-	 */
-	void handleFrame(Frame frame);
+
+	void receiveMSG(Frame frame);
+
+	void receiveRPY(Frame frame);
+
+	void receiveERR(Frame frame);
+
+	void receiveANS(Frame frame);
+
+	void receiveNUL(Frame frame);
 	
 }

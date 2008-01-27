@@ -54,7 +54,7 @@ public class StreamParserTest extends TestCase {
 		// setup
 		Charset charset = Charset.forName("UTF-8");
 		DataHeader header = new DataHeader(MessageType.RPY, 0, 0, false, 0, 52);
-		Frame frame = new Frame(
+		FrameImpl frame = new FrameImpl(
 				header,
 				charset.encode("Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n"));
 		
@@ -81,7 +81,7 @@ public class StreamParserTest extends TestCase {
 		// setup
 		Charset charset = Charset.forName("UTF-8");
 		DataHeader header = new DataHeader(MessageType.RPY, 0, 0, false, 0, 52);
-		Frame frame = new Frame(
+		FrameImpl frame = new FrameImpl(
 				header,
 				charset.encode("Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n"));
 		
@@ -131,7 +131,7 @@ public class StreamParserTest extends TestCase {
 		// setup
 		Charset charset = Charset.forName("US-ASCII");
 		DataHeader header = new DataHeader(MessageType.RPY, 0, 0, false, 0, 52);
-		Frame frame = new Frame(
+		FrameImpl frame = new FrameImpl(
 				header,
 				charset.encode("Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n"));
 		

@@ -60,7 +60,7 @@ public interface ChannelFilter {
 	 * @param message the received message
 	 * @param reply the reply object used to send back a reply
 	 */
-	void filterMessageReceived(NextFilter next, Message message, Reply reply);
+	void filterMessageReceived(NextFilter next, Object message, Reply reply);
 	
 	/**
 	 * Filters {@link ChannelHandler#channelCloseRequested(CloseChannelRequest)}.
@@ -85,7 +85,7 @@ public interface ChannelFilter {
 	 * @param next the next filter in the chain
 	 * @param message the received RPY message
 	 */
-	void filterReceivedRPY(NextFilter next, Message message);
+	void filterReceivedRPY(NextFilter next, Object message);
 	
 	/**
 	 * Filters {@link ReplyHandler#receivedERR(Message)}.
@@ -93,7 +93,7 @@ public interface ChannelFilter {
 	 * @param next the next filter in the chain
 	 * @param message the received ERR message
 	 */
-	void filterReceivedERR(NextFilter next, Message message);
+	void filterReceivedERR(NextFilter next, Object message);
 	
 	/**
 	 * Filters {@link ReplyHandler#receivedANS(Message)}.
@@ -101,7 +101,7 @@ public interface ChannelFilter {
 	 * @param next the next filter in the chain
 	 * @param message the received ANS message
 	 */
-	void filterReceivedANS(NextFilter next, Message message);
+	void filterReceivedANS(NextFilter next, Object message);
 	
 	/**
 	 * Filters {@link ReplyHandler#receivedNUL()}.
@@ -184,7 +184,7 @@ public interface ChannelFilter {
 		 * @param message the received message
 		 * @param reply the reply object used to send the reply
 		 */
-		void filterMessageReceived(Message message, Reply reply);
+		void filterMessageReceived(Object message, Reply reply);
 		
 		/**
 		 * Invokes the method
@@ -209,7 +209,7 @@ public interface ChannelFilter {
 		 * 
 		 * @param message the received message
 		 */
-		void filterReceivedRPY(Message message);
+		void filterReceivedRPY(Object message);
 		
 		/**
 		 * Invokes the method
@@ -218,7 +218,7 @@ public interface ChannelFilter {
 		 * 
 		 * @param message the received message
 		 */
-		void filterReceivedERR(Message message);
+		void filterReceivedERR(Object message);
 		
 		/**
 		 * Invokes the method
@@ -227,7 +227,7 @@ public interface ChannelFilter {
 		 * 
 		 * @param message the received message
 		 */
-		void filterReceivedANS(Message message);
+		void filterReceivedANS(Object message);
 		
 		/**
 		 * Invokes the method

@@ -437,7 +437,7 @@ public class ChannelFilterChainTest extends TestCase {
 			next.filterChannelOpened(channel);
 		}
 
-		public void filterMessageReceived(NextFilter next, Message message, Reply reply) {
+		public void filterMessageReceived(NextFilter next, Object message, Reply reply) {
 			next.filterMessageReceived(message, reply);
 		}
 		
@@ -449,15 +449,15 @@ public class ChannelFilterChainTest extends TestCase {
 			next.filterChannelClosed();
 		}
 
-		public void filterReceivedRPY(NextFilter next, Message message) {
+		public void filterReceivedRPY(NextFilter next, Object message) {
 			next.filterReceivedRPY(message);
 		}
 		
-		public void filterReceivedERR(NextFilter next, Message message) {
+		public void filterReceivedERR(NextFilter next, Object message) {
 			next.filterReceivedERR(message);
 		}
 		
-		public void filterReceivedANS(NextFilter next, Message message) {
+		public void filterReceivedANS(NextFilter next, Object message) {
 			next.filterReceivedANS(message);
 		}
 		
@@ -497,7 +497,7 @@ public class ChannelFilterChainTest extends TestCase {
 			// terminate
 		}
 		
-		public void filterMessageReceived(NextFilter next, Message message, Reply reply) {
+		public void filterMessageReceived(NextFilter next, Object message, Reply reply) {
 			// terminate
 		}
 		
@@ -509,15 +509,15 @@ public class ChannelFilterChainTest extends TestCase {
 			// terminate
 		}
 		
-		public void filterReceivedRPY(NextFilter next, Message message) {
+		public void filterReceivedRPY(NextFilter next, Object message) {
 			// terminate
 		}
 		
-		public void filterReceivedERR(NextFilter next, Message message) {
+		public void filterReceivedERR(NextFilter next, Object message) {
 			// terminate
 		}
 		
-		public void filterReceivedANS(NextFilter next, Message message) {
+		public void filterReceivedANS(NextFilter next, Object message) {
 			// terminate
 		}
 		

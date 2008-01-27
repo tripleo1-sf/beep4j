@@ -18,6 +18,7 @@ package net.sf.beep4j.internal.stream;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.beep4j.Frame;
 import net.sf.beep4j.internal.SessionListener;
 import net.sf.beep4j.internal.util.Assert;
 
@@ -39,13 +40,49 @@ public class DelegatingFrameHandler implements FrameHandler, SessionListener {
 		this.channelStarted(0);
 	}
 	
-	public void handleFrame(Frame frame) {
+	public void receiveMSG(Frame frame) {
 		FrameHandler handler = handlers.get(frame.getChannelNumber());
 		if (handler == null) {
-			throw new IllegalStateException("there must be a FrameHandler for channel "
-					+ frame.getChannelNumber() + "; channelStarted was not called");
+			throw missingChannelHandlerException(frame);
 		}
-		handler.handleFrame(frame);
+		handler.receiveMSG(frame);
+	}
+	
+	public void receiveRPY(Frame frame) {
+		FrameHandler handler = handlers.get(frame.getChannelNumber());
+		if (handler == null) {
+			throw missingChannelHandlerException(frame);
+		}
+		handler.receiveRPY(frame);
+	}
+	
+	public void receiveERR(Frame frame) {
+		FrameHandler handler = handlers.get(frame.getChannelNumber());
+		if (handler == null) {
+			throw missingChannelHandlerException(frame);
+		}
+		handler.receiveERR(frame);
+	}
+	
+	public void receiveANS(Frame frame) {
+		FrameHandler handler = handlers.get(frame.getChannelNumber());
+		if (handler == null) {
+			throw missingChannelHandlerException(frame);
+		}
+		handler.receiveANS(frame);
+	}
+	
+	public void receiveNUL(Frame frame) {
+		FrameHandler handler = handlers.get(frame.getChannelNumber());
+		if (handler == null) {
+			throw missingChannelHandlerException(frame);
+		}
+		handler.receiveNUL(frame);
+	}
+	
+	private IllegalStateException missingChannelHandlerException(Frame frame) {
+		return new IllegalStateException("there must be a FrameHandler for channel "
+				+ frame.getChannelNumber());
 	}
 	
 	public void channelStarted(int channelNumber) {

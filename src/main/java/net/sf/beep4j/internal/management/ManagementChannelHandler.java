@@ -60,8 +60,8 @@ final class ManagementChannelHandler implements ChannelHandler {
 		// ignored, channel management profile is not interested in channel
 	}
 	
-	public void messageReceived(Message message, Reply reply) {
-		ManagementRequest r = parser.parseRequest(message);
+	public void messageReceived(Object message, Reply reply) {
+		ManagementRequest r = parser.parseRequest((Message) message);
 		
 		if (r instanceof StartChannelMessage) {
 			StartChannelMessage request = (StartChannelMessage) r;

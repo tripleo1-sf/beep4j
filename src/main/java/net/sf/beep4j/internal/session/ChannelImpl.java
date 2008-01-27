@@ -26,6 +26,7 @@ import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelCallback;
 import net.sf.beep4j.CloseChannelRequest;
+import net.sf.beep4j.Frame;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.ProtocolException;
@@ -41,9 +42,9 @@ import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.internal.util.IntegerSequence;
 import net.sf.beep4j.internal.util.Sequence;
 
-class ChannelImpl implements Channel, InternalChannel {
+public class ChannelImpl implements Channel, InternalChannel {
 	
-	private final InternalSession session;
+	protected final InternalSession session;
 	
 	private final String profile;
 	
@@ -180,7 +181,7 @@ class ChannelImpl implements Channel, InternalChannel {
 	 * @param messageNumber the message number of the incoming reply
 	 * @param handler the ReplyHandler that will process the reply
 	 */
-	private void registerReplyHandler(final int messageNumber, final ReplyHandler handler) {
+	protected void registerReplyHandler(final int messageNumber, final ReplyHandler handler) {
 		synchronized (replyHandlerHolders) {
 			replyHandlerHolders.addLast(new ReplyHandlerHolder(handler, messageNumber));
 		}
@@ -198,47 +199,47 @@ class ChannelImpl implements Channel, InternalChannel {
 		return new FilterChannelHandler(filterChain, channelHandler);
 	}
 	
-	public void receiveMSG(final int messageNumber, final Message message) {
+	public void receiveMSG(Frame frame) {
 		Assert.holdsLock("session", sessionLock);
 		
-		if (hasReply(messageNumber)) {
+		if (hasReply(frame.getMessageNumber())) {
 			// Validation of frames according to the BEEP specification section 2.2.1.1.
 			//
 			// A frame is poorly formed if the header starts with "MSG", and 
 			// the message number refers to a "MSG" message that has been 
 			// completely received but for which a reply has not been completely sent.
-			throw new ProtocolException("Message number " + messageNumber
+			throw new ProtocolException("Message number " + frame.getMessageNumber()
 					+ " on channel " + channelNumber + " refers to a MSG message "
 					+ "that has been received but for which a reply has not been "
 					+ "completely sent.");
 		}
 		
-		Reply reply = createReply(session, messageNumber);
-		state.receiveMSG(message, reply);
+		Reply reply = createReply(session, frame.getMessageNumber());
+		state.receiveMSG(frame, reply);
 	}
 	
-	public void receiveRPY(final int messageNumber, final Message message) {
+	public void receiveRPY(Frame frame) {
 		Assert.holdsLock("session", sessionLock);
-		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(messageNumber);
-		state.receiveRPY(holder, message);
+		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(frame.getMessageNumber());
+		state.receiveRPY(holder, frame);
 	}
 	
-	public void receiveERR(final int messageNumber, final Message message) {
+	public void receiveERR(Frame frame) {
 		Assert.holdsLock("session", sessionLock);
-		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(messageNumber);
-		state.receiveERR(holder, message);
+		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(frame.getMessageNumber());
+		state.receiveERR(holder, frame);
 	}
 	
-	public void receiveANS(final int messageNumber, final int answerNumber, final Message message) {
+	public void receiveANS(Frame frame) {
 		Assert.holdsLock("session", sessionLock);
-		ReplyHandlerHolder holder = getReplyHandlerHolder(messageNumber);
-		state.receiveANS(holder, message);
+		ReplyHandlerHolder holder = getReplyHandlerHolder(frame.getMessageNumber());
+		state.receiveANS(holder, frame);
 	}
 	
-	public void receiveNUL(final int messageNumber) {
+	public void receiveNUL(Frame frame) {
 		Assert.holdsLock("session", sessionLock);
-		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(messageNumber);
-		state.receiveNUL(holder);
+		ReplyHandlerHolder holder = unregisterReplyHandlerHolder(frame.getMessageNumber());
+		state.receiveNUL(holder, frame);
 	}
 	
 	public boolean isAlive() {
@@ -436,7 +437,7 @@ class ChannelImpl implements Channel, InternalChannel {
 		}
 
 		@Override
-		public void filterMessageReceived(NextFilter next, Message message, Reply reply) {
+		public void filterMessageReceived(NextFilter next, Object message, Reply reply) {
 			FilterChainTargetHolder.getChannelHandler().messageReceived(message, reply);
 		}
 		
@@ -463,17 +464,17 @@ class ChannelImpl implements Channel, InternalChannel {
 		}
 
 		@Override
-		public void filterReceivedRPY(NextFilter next, Message message) {
+		public void filterReceivedRPY(NextFilter next, Object message) {
 			FilterChainTargetHolder.getReplyHandler().receivedRPY(message);
 		}
 		
 		@Override
-		public void filterReceivedERR(NextFilter next, Message message) {
+		public void filterReceivedERR(NextFilter next, Object message) {
 			FilterChainTargetHolder.getReplyHandler().receivedERR(message);
 		}
 		
 		@Override
-		public void filterReceivedANS(NextFilter next, Message message) {
+		public void filterReceivedANS(NextFilter next, Object message) {
 			FilterChainTargetHolder.getReplyHandler().receivedANS(message);
 		}
 		
@@ -498,7 +499,8 @@ class ChannelImpl implements Channel, InternalChannel {
 			this.target = target;
 		}
 		
-		public void receivedANS(Message message) {
+		public void receivedANS(Object message) {
+			// TODO: review
 			target.receivedANS(message);			
 		}
 		
@@ -506,22 +508,25 @@ class ChannelImpl implements Channel, InternalChannel {
 			try {
 				target.receivedNUL();
 			} finally {
+				// TODO: review
 				outgoingReplyCompleted();
 			}
 		}
 		
-		public void receivedERR(Message message) {
+		public void receivedERR(Object message) {
 			try {
 				target.receivedERR(message);
 			} finally {
+				// TODO: review
 				outgoingReplyCompleted();
 			}
 		}
 		
-		public void receivedRPY(Message message) {
+		public void receivedRPY(Object message) {
 			try {
 				target.receivedRPY(message);
 			} finally {
+				// TODO: review
 				outgoingReplyCompleted();
 			}
 		}
@@ -563,23 +568,29 @@ class ChannelImpl implements Channel, InternalChannel {
 	private static class ReplyHandlerHolder implements ReplyHandler {
 		private final ReplyHandler target;
 		private final int messageNumber;
+		
 		private ReplyHandlerHolder(ReplyHandler target, int messageNumber) {
 			this.target = target;
 			this.messageNumber = messageNumber;
 		}
+		
 		int getMessageNumber() {
 			return messageNumber;
 		}
-		public void receivedANS(Message message) {
+		
+		public void receivedANS(Object message) {
 			target.receivedANS(message);
 		}
+		
 		public void receivedNUL() {
 			target.receivedNUL();
 		}
-		public void receivedERR(Message message) {
+		
+		public void receivedERR(Object message) {
 			target.receivedERR(message);
 		}
-		public void receivedRPY(Message message) {
+		
+		public void receivedRPY(Object message) {
 			target.receivedRPY(message);
 		}
 	}
@@ -594,15 +605,15 @@ class ChannelImpl implements Channel, InternalChannel {
 		
 		void closeRequested(CloseCallback callback);
 		
-		void receiveMSG(Message message, Reply reply);
+		void receiveMSG(Frame frame, Reply reply);
 		
-		void receiveRPY(ReplyHandler replyHandler, Message message);
+		void receiveRPY(ReplyHandler replyHandler, Frame frame);
 		
-		void receiveERR(ReplyHandler replyHandler, Message message);
+		void receiveERR(ReplyHandler replyHandler, Frame frame);
 		
-		void receiveANS(ReplyHandler replyHandler, Message message);
+		void receiveANS(ReplyHandler replyHandler, Frame frame);
 		
-		void receiveNUL(ReplyHandler replyHandler);
+		void receiveNUL(ReplyHandler replyHandler, Frame frame);
 		
 	}
 	
@@ -624,24 +635,24 @@ class ChannelImpl implements Channel, InternalChannel {
 			throw new IllegalStateException(buildExceptionMessage("closeRequested"));
 		}
 		
-		public void receiveMSG(Message message, Reply reply) {
+		public void receiveMSG(Frame frame, Reply reply) {
 			throw new IllegalStateException(buildExceptionMessage("receiveMSG"));
 		}
 		
-		public void receiveANS(ReplyHandler replyHandler, Message message) {
-			throw new IllegalStateException(buildExceptionMessage("receiveANS"));
+		public void receiveRPY(ReplyHandler replyHandler, Frame frame) {
+			throw new IllegalStateException(buildExceptionMessage("receiveRPY"));
 		}
 		
-		public void receiveNUL(ReplyHandler replyHandler) {
-			throw new IllegalStateException(buildExceptionMessage("receiveNUL"));
-		}
-		
-		public void receiveERR(ReplyHandler replyHandler, Message message) {
+		public void receiveERR(ReplyHandler replyHandler, Frame frame) {
 			throw new IllegalStateException(buildExceptionMessage("receiveERR"));
 		}
 		
-		public void receiveRPY(ReplyHandler replyHandler, Message message) {
-			throw new IllegalStateException(buildExceptionMessage("receiveRPY"));
+		public void receiveANS(ReplyHandler replyHandler, Frame frame) {
+			throw new IllegalStateException(buildExceptionMessage("receiveANS"));
+		}
+		
+		public void receiveNUL(ReplyHandler replyHandler, Frame frame) {
+			throw new IllegalStateException(buildExceptionMessage("receiveNUL"));
 		}
 		
 		private String buildExceptionMessage(String method) {
@@ -656,24 +667,25 @@ class ChannelImpl implements Channel, InternalChannel {
 	private abstract class AbstractReceivingState extends AbstractState {
 		
 		@Override
-		public void receiveANS(ReplyHandler replyHandler, Message message) {
-			replyHandler.receivedANS(message);
+		public void receiveRPY(ReplyHandler replyHandler, Frame frame) {
+			replyHandler.receivedRPY(frame);
 		}
 		
 		@Override
-		public void receiveNUL(ReplyHandler replyHandler) {
+		public void receiveERR(ReplyHandler replyHandler, Frame frame) {
+			replyHandler.receivedERR(frame);
+		}
+		
+		@Override
+		public void receiveANS(ReplyHandler replyHandler, Frame frame) {
+			replyHandler.receivedANS(frame);
+		}
+		
+		@Override
+		public void receiveNUL(ReplyHandler replyHandler, Frame frame) {
 			replyHandler.receivedNUL();
 		}
 		
-		@Override
-		public void receiveERR(ReplyHandler replyHandler, Message message) {
-			replyHandler.receivedERR(message);
-		}
-		
-		@Override
-		public void receiveRPY(ReplyHandler replyHandler, Message message) {
-			replyHandler.receivedRPY(message);
-		}
 	}
 	
 	private class Alive extends AbstractReceivingState {
@@ -684,8 +696,8 @@ class ChannelImpl implements Channel, InternalChannel {
 		}
 		
 		@Override
-		public void receiveMSG(Message message, Reply reply) {
-			channelHandler.messageReceived(message, reply);
+		public void receiveMSG(Frame frame, Reply reply) {
+			channelHandler.messageReceived(frame, reply);
 		}
 		
 		@Override
@@ -715,8 +727,8 @@ class ChannelImpl implements Channel, InternalChannel {
 		}
 		
 		@Override
-		public void receiveMSG(Message message, Reply reply) {
-			channelHandler.messageReceived(message, reply);
+		public void receiveMSG(Frame frame, Reply reply) {
+			channelHandler.messageReceived(frame, reply);
 		}
 		
 		/**
@@ -779,7 +791,7 @@ class ChannelImpl implements Channel, InternalChannel {
 		}
 		
 		@Override
-		public void receiveMSG(Message message, Reply handler) {
+		public void receiveMSG(Frame frame, Reply handler) {
 			throw new ProtocolException("the remote peer is not allowed to send "
 					+ "further messages on a channel after sending a channel close request");
 		}
