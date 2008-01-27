@@ -18,11 +18,6 @@ package net.sf.beep4j.internal.stream;
 import java.nio.ByteBuffer;
 
 import junit.framework.TestCase;
-import net.sf.beep4j.internal.stream.DataHeader;
-import net.sf.beep4j.internal.stream.Frame;
-import net.sf.beep4j.internal.stream.MessageAssembler;
-import net.sf.beep4j.internal.stream.MessageHandler;
-import net.sf.beep4j.internal.stream.MessageType;
 import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 
 import org.easymock.MockControl;
@@ -30,14 +25,14 @@ import org.easymock.MockControl;
 public class MessageAssemblerTest extends TestCase {
 	
 	private MockControl control;
-	private MessageHandler handler;
+	private FrameHandler handler;
 	private MessageAssembler target;
 
 	@Override
 	protected void setUp() throws Exception {
-		control = MockControl.createStrictControl(MessageHandler.class);
+		control = MockControl.createStrictControl(FrameHandler.class);
 		control.setDefaultMatcher(MockControl.ALWAYS_MATCHER);
-		handler = (MessageHandler) control.getMock();
+		handler = (FrameHandler) control.getMock();
 		target = new MessageAssembler(handler);
 	}
 	
@@ -57,11 +52,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test		
 		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, false, 0, 10);
-		Frame frame = new Frame(header, getByteBuffer(10));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.MSG, 0, 1, false, 10, 10);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 	}
 	
@@ -71,15 +66,15 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, true, 0, 10);
-		Frame frame = new Frame(header, getByteBuffer(10));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.MSG, 0, 0, false, 10, 10);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.MSG, 0, 0, true, 20, 10);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 	}
 	
@@ -88,11 +83,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, true, 0, 10);
 		// test
-		Frame frame = new Frame(header, getByteBuffer(10));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.MSG, 0, 1, false, 10, 10);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		try {
 			target.handleFrame(frame);
 			fail("message numbers are not equal");
@@ -106,11 +101,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new DataHeader(MessageType.MSG, 1, 0, true, 0, 20);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.RPY, 1, 0, false, 20, 20);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
 			target.handleFrame(frame);
 			fail("invalid successor not detected");
@@ -127,15 +122,15 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, false, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, false, 20, 20, 1);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.NUL, 1, 0, false, 40, 0);
-		frame = new Frame(header, getByteBuffer(0));
+		frame = new FrameImpl(header, getByteBuffer(0));
 		target.handleFrame(frame);
 	}
 	
@@ -146,19 +141,19 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, true, 20, 20, 0);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, false, 40, 20, 0);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.NUL, 1, 0, false, 60, 0);
-		frame = new Frame(header, getByteBuffer(0));
+		frame = new FrameImpl(header, getByteBuffer(0));
 		target.handleFrame(frame);
 	}
 	
@@ -170,23 +165,23 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, true, 20, 20, 1);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, false, 40, 10, 0);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 0, false, 50, 10, 1);
-		frame = new Frame(header, getByteBuffer(10));
+		frame = new FrameImpl(header, getByteBuffer(10));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.NUL, 1, 0, false, 60, 0);
-		frame = new Frame(header, getByteBuffer(0));
+		frame = new FrameImpl(header, getByteBuffer(0));
 		target.handleFrame(frame);
 	}
 
@@ -195,11 +190,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.RPY, 1, 0, false, 20, 20);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
 			target.handleFrame(frame);
 			fail("ANS or NUL expected");
@@ -214,11 +209,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, false, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new ANSHeader(1, 1, false, 20, 20, 1);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
 			target.handleFrame(frame);
 			fail("message number mismatch");
@@ -232,11 +227,11 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		Frame frame = new Frame(header, getByteBuffer(20));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
 		target.handleFrame(frame);
 		
 		header = new DataHeader(MessageType.NUL, 1, 0, false, 20, 0);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
 			target.handleFrame(frame);
 			fail("response has unfinished ANS messages");
@@ -251,7 +246,7 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new DataHeader(MessageType.NUL, 1, 0, false, 0, 0);
-		Frame frame = new Frame(header, getByteBuffer(0));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(0));
 		target.handleFrame(frame);
 		
 		// verify
@@ -263,7 +258,7 @@ public class MessageAssemblerTest extends TestCase {
 		
 		// test
 		DataHeader header = new DataHeader(MessageType.NUL, 1, 0, true, 0, 0);
-		Frame frame = new Frame(header, getByteBuffer(0));
+		FrameImpl frame = new FrameImpl(header, getByteBuffer(0));
 		
 		try {
 			target.handleFrame(frame);
@@ -274,7 +269,7 @@ public class MessageAssemblerTest extends TestCase {
 		}
 		
 		header = new DataHeader(MessageType.NUL, 1, 0, false, 0, 20);
-		frame = new Frame(header, getByteBuffer(20));
+		frame = new FrameImpl(header, getByteBuffer(20));
 		
 		try {
 			target.handleFrame(frame);

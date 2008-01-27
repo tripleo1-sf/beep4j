@@ -101,11 +101,11 @@ public class DefaultChannelFilterChain implements InternalChannelFilterChain {
 		entry.getFilter().filterChannelOpened(entry.getNextFilter(), channel);
 	}
 	
-	public void fireFilterMessageReceived(Message message, Reply reply) {
+	public void fireFilterMessageReceived(Object message, Reply reply) {
 		callNextFilterMessageReceived(head, message, reply);
 	}
 	
-	private static void callNextFilterMessageReceived(Entry entry, Message message, Reply reply) {
+	private static void callNextFilterMessageReceived(Entry entry, Object message, Reply reply) {
 		entry.getFilter().filterMessageReceived(entry.getNextFilter(), message, reply);
 	}
 	
@@ -125,27 +125,27 @@ public class DefaultChannelFilterChain implements InternalChannelFilterChain {
 		entry.getFilter().filterChannelClosed(entry.getNextFilter());
 	}
 	
-	public void fireFilterReceivedRPY(Message message) {
+	public void fireFilterReceivedRPY(Object message) {
 		callNextFilterReceivedRPY(head, message);
 	}
 	
-	private static void callNextFilterReceivedRPY(Entry entry, Message message) {
+	private static void callNextFilterReceivedRPY(Entry entry, Object message) {
 		entry.getFilter().filterReceivedRPY(entry.getNextFilter(), message);
 	}
 	
-	public void fireFilterReceivedERR(Message message) {
+	public void fireFilterReceivedERR(Object message) {
 		callNextFilterReceivedERR(head, message);
 	}
 	
-	private static void callNextFilterReceivedERR(Entry entry, Message message) {
+	private static void callNextFilterReceivedERR(Entry entry, Object message) {
 		entry.getFilter().filterReceivedERR(entry.getNextFilter(), message);
 	}
 	
-	public void fireFilterReceivedANS(Message message) {
+	public void fireFilterReceivedANS(Object message) {
 		callNextFilterReceivedANS(head, message);
 	}
 	
-	private static void callNextFilterReceivedANS(Entry entry, Message message) {
+	private static void callNextFilterReceivedANS(Entry entry, Object message) {
 		entry.getFilter().filterReceivedANS(entry.getNextFilter(), message);
 	}
 	
@@ -207,7 +207,7 @@ public class DefaultChannelFilterChain implements InternalChannelFilterChain {
 				public void filterChannelOpened(Channel channel) {
 					callNextFilterChannelOpened(next, channel);
 				}
-				public void filterMessageReceived(Message message, Reply reply) {
+				public void filterMessageReceived(Object message, Reply reply) {
 					callNextFilterMessageReceived(next, message, reply);
 				}
 				public void filterChannelCloseRequested(CloseChannelRequest request) {
@@ -216,13 +216,13 @@ public class DefaultChannelFilterChain implements InternalChannelFilterChain {
 				public void filterChannelClosed() {
 					callNextFilterChannelClosed(next);
 				}
-				public void filterReceivedRPY(Message message) {
+				public void filterReceivedRPY(Object message) {
 					callNextFilterReceivedRPY(next, message);
 				}
-				public void filterReceivedERR(Message message) {
+				public void filterReceivedERR(Object message) {
 					callNextFilterReceivedERR(next, message);
 				}
-				public void filterReceivedANS(Message message) {
+				public void filterReceivedANS(Object message) {
 					callNextFilterReceivedANS(next, message);
 				}
 				public void filterReceivedNUL() {

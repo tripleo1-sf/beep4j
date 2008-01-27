@@ -15,24 +15,17 @@
  */
 package net.sf.beep4j.internal.stream;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
-import net.sf.beep4j.Message;
+import net.sf.beep4j.Frame;
 import net.sf.beep4j.ProtocolException;
-import net.sf.beep4j.internal.message.DefaultMessageParser;
-import net.sf.beep4j.internal.message.MessageParser;
-import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MessageAssembler assembles fragmented frames into a Message.
- * The assembled Messages are passed to a {@link MessageHandler}.
+ * Validating {@link FrameHandler} for BEEP sequencing constraints.
  * 
  * @author Simon Raess
  */
@@ -40,11 +33,11 @@ public class MessageAssembler implements FrameHandler {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(MessageAssembler.class);
 	
-	private final MessageHandler handler;
+	private final FrameHandler handler;
 	
 	private State currentState;
 
-	public MessageAssembler(MessageHandler handler) {
+	public MessageAssembler(FrameHandler handler) {
 		this.handler = handler;
 	}
 	
@@ -57,106 +50,116 @@ public class MessageAssembler implements FrameHandler {
 	
 	// --> start of FrameHandler methods <--
 	
-	public void handleFrame(Frame frame) {
-		LOG.debug("got frame: " + frame.getHeader());
-		
+	public void receiveMSG(Frame frame) {
 		if (currentState == null) {
-			MessageType type = frame.getHeader().getType();
-			if (MessageType.ANS == type || MessageType.NUL == type) {
-				setCurrentState(new AnsState());
-			} else {
-				setCurrentState(new NormalState());
-			}
+			setCurrentState(new NormalState(MessageType.MSG));
 		}
 		
 		// pass on to the state
 		currentState.append(frame, handler);
+		
+		// pass to target handler
+		handler.receiveMSG(frame);
+	}
+	
+	public void receiveRPY(Frame frame) {
+		if (currentState == null) {
+			setCurrentState(new NormalState(MessageType.RPY));
+		}
+		
+		// pass on to the state
+		currentState.append(frame, handler);
+
+		// pass to target handler
+		handler.receiveRPY(frame);
+	}
+	
+	public void receiveERR(Frame frame) {
+		if (currentState == null) {
+			setCurrentState(new NormalState(MessageType.ERR));
+		}
+		
+		// pass on to the state
+		currentState.append(frame, handler);
+
+		// pass to target handler
+		handler.receiveERR(frame);
+	}
+	
+	public void receiveANS(Frame frame) {
+		if (currentState == null) {
+			setCurrentState(new AnsState());
+		}
+		
+		// pass on to the state
+		currentState.append(frame, handler);
+
+		// pass to target handler
+		handler.receiveANS(frame);
+	}
+	
+	public void receiveNUL(Frame frame) {
+		if (currentState == null) {
+			setCurrentState(new AnsState());
+		}
+		
+		// pass on to the state
+		currentState.append(frame, handler);
+
+		// pass to target handler
+		handler.receiveNUL(frame);
 	}
 	
 	// --> end of FrameHandler methods <--
 	
-	
-	protected Message createMessage(List<Frame> frames) {
-		if (frames.size() == 0) {
-			throw new IllegalArgumentException("cannot create message from 0 fragments");
-		}
-		
-		LOG.debug("creating message from " + frames.size() + " frames");
-		
-		int total = 0;
-		for (Frame frame : frames) {
-			long check = total + frame.getSize();
-			if (check > Integer.MAX_VALUE) {
-				throw new ProtocolException("total message length is longer "
-						+ "than supported: " + check);
-			}
-			total += frame.getPayload().remaining();
-		}
-		
-		LOG.debug("total payload size is " + total);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(total);
-		for (Frame frame : frames) {
-			buffer.put(frame.getPayload());
-		}
-		buffer.flip();
-		
-		MessageParser parser = new DefaultMessageParser();
-		return parser.parse(buffer);
-	}
-
-	protected void receive(MessageType type, int channelNumber, int messageNumber, Message message) {
-		if (MessageType.ERR == type) {
-			handler.receiveERR(channelNumber, messageNumber, message);
-		} else if (MessageType.MSG == type) {
-			handler.receiveMSG(channelNumber, messageNumber, message);
-		} else if (MessageType.RPY == type) {
-			handler.receiveRPY(channelNumber, messageNumber, message);
-		} else {
-			throw new IllegalArgumentException("unkown type: " + type);
-		}
-	}
-	
-	protected void receive(int channelNumber, int messageNumber, int answerNumber, Message message) {
-		handler.receiveANS(channelNumber, messageNumber, answerNumber, message);
-	}
-	
 	private static interface State {
-		void append(Frame frame, MessageHandler handler);
+		
+		void append(Frame frame, FrameHandler handler);
+		
 	}
 	
 	private class NormalState implements State {
-		private List<Frame> fragments;
-		private DataHeader last;
 		
-		private NormalState() { 
-			this.fragments = new LinkedList<Frame>();
+		private final MessageType type;
+		
+		private Frame last;
+		
+		private long totalSize;
+		
+		private NormalState(MessageType type) { 
+			this.type = type;
 		}
 		
 		private boolean hasPreviousFrame() {
 			return last != null;
 		}
 		
-		public void append(Frame frame, MessageHandler handler) {
-			DataHeader header = (DataHeader) frame.getHeader();
-			MessageType type = header.getType();
-			
+		public void append(Frame frame, FrameHandler handler) {
 			if (hasPreviousFrame()) {
-				validateMessageNumber(header);
+				validateMessageNumber(frame);
 				validateMatchingFragmentTypes(last.getType(), type);
 			}
 			
-			fragments.add(frame);
+			validateAndIncrementSize(frame.getSize(), frame.getChannelNumber(), frame.getMessageNumber());
 			
-			if (header.isIntermediate()) {
-				last = (DataHeader) frame.getHeader();
+			if (frame.isIntermediate()) {
+				last = frame;
 			} else {
-				LOG.debug("got complete message with " + fragments.size() + " fragments");
+				LOG.debug("got complete message");
 				last = null;
-				List<Frame> copy = new LinkedList<Frame>(fragments);
-				fragments.clear();
 				setCurrentState(null);
-				receive(type, frame.getChannelNumber(), frame.getMessageNumber(), createMessage(copy));
+			}
+		}
+		
+		/*
+		 * Validates that the cumulative size of all frames for a given message
+		 * does not exceed Integer.MAX_VALUE.
+		 */
+		private void validateAndIncrementSize(int size, int channelNumber, int messageNumber) {
+			totalSize += size;
+			if (totalSize > Integer.MAX_VALUE) {
+				throw new ProtocolException("cumulative frame size exceeds maximum BEEP message size "
+						+ "for message " + messageNumber + " on channel " + channelNumber);
 			}
 		}
 
@@ -169,10 +172,10 @@ public class MessageAssembler implements FrameHandler {
 		 * was intermediate ("*"), and its message number isn't identical to this frame's 
 		 * message number.
 		 */
-		private void validateMessageNumber(DataHeader header) {
-			if (last.getMessageNumber() != header.getMessageNumber()) {
+		private void validateMessageNumber(Frame current) {
+			if (last.getMessageNumber() != current.getMessageNumber()) {
 				throw new ProtocolException("message number for fragments does not match: was "
-						+ header.getMessageNumber() + ", should be " 
+						+ current.getMessageNumber() + ", should be " 
 						+ last.getMessageNumber());
 			}
 		}
@@ -206,36 +209,25 @@ public class MessageAssembler implements FrameHandler {
 	}
 	
 	private class AnsState implements State {
-		private Map<Integer, List<Frame>> fragments;
+		
+		private final Map<Integer, Long> totalSizes = new HashMap<Integer, Long>();
+		
 		private int messageNumber = -1;
 		
-		private AnsState() {
-			this.fragments = new HashMap<Integer, List<Frame>>();
-		}
-		
-		public void append(Frame frame, MessageHandler handler) {
+		public void append(Frame frame, FrameHandler handler) {
 			MessageType type = frame.getType();
 			
 			if (messageNumber == -1) {
 				messageNumber = frame.getMessageNumber();
 			} else {
-				validateMessageNumber(frame.getHeader());
+				validateMessageNumber(frame);
 			}
 			
 			if (MessageType.ANS == type) {
-				ANSHeader header = (ANSHeader) frame.getHeader();
-				List<Frame> frames = fragments.get(header.getAnswerNumber());
-				if (frames == null) {
-					frames = new LinkedList<Frame>();
-					fragments.put(header.getAnswerNumber(), frames);
-				}
-				frames.add(frame);
-				if (!header.isIntermediate()) {
-					fragments.remove(header.getAnswerNumber());
-					receive(frame.getChannelNumber(), 
-							frame.getMessageNumber(), 
-							header.getAnswerNumber(),
-							createMessage(frames));				
+				validateAndIncrementMessageSize(frame);
+
+				if (!frame.isIntermediate()) {
+					totalSizes.remove(frame.getAnswerNumber());
 				}
 				
 			} else if (MessageType.NUL == type) {
@@ -255,13 +247,21 @@ public class MessageAssembler implements FrameHandler {
 							+ frame.getSize() + ")");
 				}
 				
-				fragments.clear();
 				setCurrentState(null);
-				handler.receiveNUL(frame.getChannelNumber(), frame.getMessageNumber());
 				
 			} else {
 				throw new ProtocolException("expected ANS or NUL message, was " + type.name());
 			}			
+		}
+		
+		private void validateAndIncrementMessageSize(Frame frame) {
+			Long totalSize = totalSizes.get(frame.getAnswerNumber());
+			if (totalSize == null) {
+				totalSize = 0l;
+			}
+			
+			totalSize += frame.getSize();
+			totalSizes.put(frame.getAnswerNumber(), totalSize);
 		}
 
 		/*
@@ -273,7 +273,7 @@ public class MessageAssembler implements FrameHandler {
 		 * was intermediate ("*"), and its message number isn't identical to this frame's 
 		 * message number.
 		 */
-		private void validateMessageNumber(DataHeader current) {
+		private void validateMessageNumber(Frame current) {
 			if (messageNumber != current.getMessageNumber()) {
 				throw new ProtocolException("message number for fragments does not match: was "
 						+ current.getMessageNumber() + ", should be " 
@@ -282,7 +282,7 @@ public class MessageAssembler implements FrameHandler {
 		}
 				
 		private boolean hasUnfinishedAnsMessages() {
-			return fragments.size() > 0;
+			return totalSizes.size() > 0;
 		}
 		
 		@Override

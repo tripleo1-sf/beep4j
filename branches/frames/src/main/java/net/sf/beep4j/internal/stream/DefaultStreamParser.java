@@ -67,8 +67,19 @@ public class DefaultStreamParser implements StreamParser, ParseStateContext {
 		while (currentState.process(buffer, this));
 	}
 		
-	protected void forward(Frame frame) {
-		handler.handleFrame(frame);
+	protected void forward(FrameImpl frame) {
+		if (frame.getType() == MessageType.MSG) {
+			handler.receiveMSG(frame);
+		} else if (frame.getType() == MessageType.RPY) {
+			handler.receiveRPY(frame);
+		} else if (frame.getType() == MessageType.ERR) {
+			handler.receiveERR(frame);
+		} else if (frame.getType() == MessageType.ANS) {
+			handler.receiveANS(frame);
+		} else {
+			handler.receiveNUL(frame);
+		}
+
 		if (frame.getHeader().getPayloadSize() > 0) {				
 			mapping.frameReceived(
 					frame.getChannelNumber(), frame.getSequenceNumber(), frame.getSize());
@@ -109,7 +120,7 @@ public class DefaultStreamParser implements StreamParser, ParseStateContext {
 	}
 	
 	public void handleTrailer() {
-		Frame frame = new Frame(header, payload);
+		FrameImpl frame = new FrameImpl(header, payload);
 		forward(frame);
 		header = null;
 		payload = null;

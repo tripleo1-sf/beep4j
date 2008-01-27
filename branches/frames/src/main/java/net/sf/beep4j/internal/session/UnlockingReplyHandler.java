@@ -17,7 +17,6 @@ package net.sf.beep4j.internal.session;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import net.sf.beep4j.Message;
 import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.internal.util.Assert;
 
@@ -51,19 +50,28 @@ final class UnlockingReplyHandler implements ReplyHandler {
 		}
 	}
 	
-	public void receivedANS(Message message) {
+	public void receivedRPY(Object message) {
 		unlock();
 		try {
-			target.receivedANS(message);
+			target.receivedRPY(message);
 		} finally {
 			lock();
 		}
 	}
 
-	public void receivedERR(Message message) {
+	public void receivedERR(Object message) {
 		unlock();
 		try {
 			target.receivedERR(message);
+		} finally {
+			lock();
+		}
+	}
+	
+	public void receivedANS(Object message) {
+		unlock();
+		try {
+			target.receivedANS(message);
 		} finally {
 			lock();
 		}
@@ -73,15 +81,6 @@ final class UnlockingReplyHandler implements ReplyHandler {
 		unlock();
 		try {
 			target.receivedNUL();
-		} finally {
-			lock();
-		}
-	}
-
-	public void receivedRPY(Message message) {
-		unlock();
-		try {
-			target.receivedRPY(message);
 		} finally {
 			lock();
 		}

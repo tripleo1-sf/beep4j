@@ -20,7 +20,6 @@ import java.util.concurrent.locks.Lock;
 import net.sf.beep4j.Channel;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelRequest;
-import net.sf.beep4j.Message;
 import net.sf.beep4j.Reply;
 import net.sf.beep4j.internal.util.Assert;
 
@@ -62,7 +61,7 @@ final class UnlockingChannelHandler implements ChannelHandler {
 		}
 	}
 	
-	public void messageReceived(Message message, Reply reply) {
+	public void messageReceived(Object message, Reply reply) {
 		unlock();
 		try {
 			target.messageReceived(message, reply);

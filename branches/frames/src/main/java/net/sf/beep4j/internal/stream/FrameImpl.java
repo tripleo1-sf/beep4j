@@ -17,6 +17,8 @@ package net.sf.beep4j.internal.stream;
 
 import java.nio.ByteBuffer;
 
+import net.sf.beep4j.Frame;
+import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.transport.Transport;
 
@@ -26,7 +28,7 @@ import net.sf.beep4j.transport.Transport;
  * 
  * @author Simon Raess
  */
-public final class Frame {
+public final class FrameImpl implements Frame {
 	
 	/**
 	 * The header of this frame.
@@ -44,7 +46,7 @@ public final class Frame {
 	 * @param header the header of the frame
 	 * @param payload the payload of the frame
 	 */
-	public Frame(DataHeader header, ByteBuffer payload) {
+	public FrameImpl(DataHeader header, ByteBuffer payload) {
 		Assert.notNull("header", header);
 		Assert.notNull("payload", payload);
 		this.header = header;
@@ -71,6 +73,10 @@ public final class Frame {
 		return header.getMessageNumber();
 	}
 	
+	public int getAnswerNumber() {
+		return ((ANSHeader) header).getAnswerNumber();
+	}
+	
 	public long getSequenceNumber() {
 		return header.getSequenceNumber();
 	}
@@ -79,7 +85,7 @@ public final class Frame {
 		return header.getPayloadSize();
 	}
 	
-	public ByteBuffer getPayload() {
+	public ByteBuffer getByteBuffer() {
 		return payload;
 	}
 	
@@ -90,14 +96,14 @@ public final class Frame {
 	 * @param size the size of the first frame's payload
 	 * @return an array of two frames replacing this frame
 	 */
-	public Frame[] split(int size) {
-		Frame[] result = new Frame[2];
+	public FrameImpl[] split(int size) {
+		FrameImpl[] result = new FrameImpl[2];
 		
 		DataHeader[] headers = header.split(size);
-		ByteBuffer[] buffers = splitPayload(getPayload(), size);
+		ByteBuffer[] buffers = splitPayload(getByteBuffer(), size);
 		
-		result[0] = new Frame(headers[0], buffers[0]);		
-		result[1] = new Frame(headers[1], buffers[1]);
+		result[0] = new FrameImpl(headers[0], buffers[0]);		
+		result[1] = new FrameImpl(headers[1], buffers[1]);
 		
 		return result;
 	}
@@ -127,7 +133,7 @@ public final class Frame {
 		
 		ByteBuffer buffer = ByteBuffer.allocate(headerBuffer.remaining() + getSize() + 5);
 		buffer.put(headerBuffer);
-		buffer.put(getPayload());
+		buffer.put(getByteBuffer());
 		buffer.put(Constants.TRAILER_BYTES);
 		buffer.flip();
 		
@@ -141,7 +147,7 @@ public final class Frame {
 		} else if (obj == null) {
 			return false;
 		} else if (obj.getClass().equals(getClass())) {
-			Frame frame = (Frame) obj;
+			FrameImpl frame = (FrameImpl) obj;
 			return header.equals(frame.header)
 			    && payload.equals(frame.payload);
 		} else {

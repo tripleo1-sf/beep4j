@@ -19,6 +19,7 @@ import net.sf.beep4j.Message;
 import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.Session;
 import net.sf.beep4j.internal.management.CloseCallback;
+import net.sf.beep4j.internal.management.Greeting;
 
 public interface InternalSession extends Session {
 	
@@ -48,5 +49,9 @@ public interface InternalSession extends Session {
 	 * @param callback the callback to be notified about the outcome
 	 */
 	void requestChannelClose(int channelNumber, final CloseCallback callback);
+	
+	void sessionStartAccepted(Greeting greeting);
+	
+	void sessionStartDeclined();
 	
 }

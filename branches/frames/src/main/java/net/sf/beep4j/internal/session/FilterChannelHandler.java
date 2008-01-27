@@ -19,7 +19,6 @@ package net.sf.beep4j.internal.session;
 import net.sf.beep4j.Channel;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelRequest;
-import net.sf.beep4j.Message;
 import net.sf.beep4j.Reply;
 import net.sf.beep4j.internal.FilterChainTargetHolder;
 
@@ -46,7 +45,7 @@ final class FilterChannelHandler implements ChannelHandler {
 		}
 	}
 
-	public void messageReceived(Message message, Reply reply) {
+	public void messageReceived(Object message, Reply reply) {
 		FilterChainTargetHolder.setChannelHandler(target);
 		try {
 			filterChain.fireFilterMessageReceived(message, reply);

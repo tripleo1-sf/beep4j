@@ -24,7 +24,6 @@ import net.sf.beep4j.internal.stream.DelegatingFrameHandler;
 import net.sf.beep4j.internal.stream.FrameHandler;
 import net.sf.beep4j.internal.stream.FrameHandlerFactory;
 import net.sf.beep4j.internal.stream.MessageAssembler;
-import net.sf.beep4j.internal.stream.MessageHandler;
 import net.sf.beep4j.internal.stream.StreamParser;
 import net.sf.beep4j.internal.tcp.TCPMapping;
 import net.sf.beep4j.internal.util.HexDump;
@@ -62,10 +61,9 @@ public class MinaTransport extends IoHandlerAdapter implements Transport {
 		final TCPMapping mapping = new TCPMapping(this);
 		final SessionImpl session = new SessionImpl(initiator, sessionHandler, mapping);
 		session.setChannelFilterChainBuilder(channelFilterChainBuilder);
-		final MessageHandler messageHandler = session;
 		final DelegatingFrameHandler frameHandler = new DelegatingFrameHandler(new FrameHandlerFactory() {
 			public FrameHandler createFrameHandler() {
-				return new MessageAssembler(messageHandler);
+				return new MessageAssembler(session);
 			}
 		});
 		session.addSessionListener(frameHandler);

@@ -45,7 +45,7 @@ public interface ChannelHandler {
 	 * @param message the received message
 	 * @param reply the handler used to return a response.
 	 */
-	void messageReceived(Message message, Reply reply);
+	void messageReceived(Object message, Reply reply);
 	
 	/**
 	 * Invoked by the framework when the other peer requested to
