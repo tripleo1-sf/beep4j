@@ -23,9 +23,11 @@ import net.sf.beep4j.CloseChannelRequest;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageStub;
 import net.sf.beep4j.NullReplyHandler;
+import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.internal.NullChannelFilterChainBuilder;
 import net.sf.beep4j.internal.management.CloseCallback;
+import net.sf.beep4j.internal.stream.MessageType;
 
 import org.hamcrest.Description;
 import org.jmock.Expectations;
@@ -36,7 +38,7 @@ import org.jmock.api.Invocation;
 
 public class ChannelImplTest extends TestCase {
 	
-	private static final String PROFILE = "http://www.example.org/profiles/echo";
+	private static final ProfileInfo PROFILE = new ProfileInfo("http://www.example.org/profiles/echo");
 	
 	private static final int CHANNEL = 1;
 	
@@ -127,14 +129,10 @@ public class ChannelImplTest extends TestCase {
 		final CloseChannelCallback callback = context.mock(CloseChannelCallback.class);
 		final Message message = new MessageStub();
 		
-		// used to capture the ReplyHandler
-		final ParameterCaptureAction<ReplyHandler> capture = 
-			new ParameterCaptureAction<ReplyHandler>(3, ReplyHandler.class, null);
-		
 		// define expectations
 		context.checking(new Expectations() {{
 			one(session).sendMSG(with(equal(1)), with(equal(1)), with(same(message)), with(any(ReplyHandler.class)));
-			will(capture); inSequence(sequence);
+			inSequence(sequence);
 			
 			one(session).requestChannelClose(with(equal(1)), with(any(CloseCallback.class)));
 			will(acceptCloseChannel(1)); inSequence(sequence);
@@ -149,7 +147,10 @@ public class ChannelImplTest extends TestCase {
 		assertIsShuttingDown(channel);
 		
 		// reply to the message so that the channel close request can be sent
-		capture.getParameter().receivedNUL();
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.NUL);
+		channel.receiveNUL(frame);
+		
 		assertIsDead(channel);
 		
 		// verify
@@ -190,13 +191,10 @@ public class ChannelImplTest extends TestCase {
 		final Message m1 = new MessageStub();
 		final Message m2 = new MessageStub();
 		
-		final ParameterCaptureAction<ReplyHandler> capture = 
-			new ParameterCaptureAction<ReplyHandler>(3, ReplyHandler.class, null);
-		
 		// define expectations
 		context.checking(new Expectations() {{
 			one(session).sendMSG(with(equal(1)), with(equal(1)), with(same(m1)), with(any(ReplyHandler.class)));
-			will(capture); inSequence(sequence);
+			inSequence(sequence);
 			
 			one(session).requestChannelClose(with(equal(1)), with(any(CloseCallback.class)));
 			will(declineCloseChannel(1, 550, "still working")); inSequence(sequence);
@@ -213,7 +211,9 @@ public class ChannelImplTest extends TestCase {
 		assertIsShuttingDown(channel);
 		
 		// complete the reply by sending a NUL message
-		capture.getParameter().receivedNUL();
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.NUL);
+		channel.receiveNUL(frame);
 		
 		// channel must be alive again
 		assertIsAlive(channel);
@@ -248,15 +248,12 @@ public class ChannelImplTest extends TestCase {
 	public void testDelayedCloseRequestedAccepted() throws Exception {
 		final Message message = new MessageStub();
 		
-		final ParameterCaptureAction<ReplyHandler> capture =
-			new ParameterCaptureAction<ReplyHandler>(3, ReplyHandler.class, null);
-		
 		final CloseCallback callback = context.mock(CloseCallback.class);
 		
 		// define expectations
 		context.checking(new Expectations() {{
 			one(session).sendMSG(with(equal(1)), with(equal(1)), with(same(message)), with(any(ReplyHandler.class)));
-			will(capture); inSequence(sequence);
+			inSequence(sequence);
 			
 			one(channelHandler).channelCloseRequested(with(any(CloseChannelRequest.class)));
 			will(acceptCloseChannelRequest(0)); inSequence(sequence);
@@ -270,7 +267,10 @@ public class ChannelImplTest extends TestCase {
 		channel.channelCloseRequested(callback);
 		assertIsShuttingDown(channel);
 		
-		capture.getParameter().receivedNUL();
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.NUL);
+		
+		channel.receiveNUL(frame);
 		assertIsDead(channel);
 		
 		// verify
@@ -302,13 +302,10 @@ public class ChannelImplTest extends TestCase {
 		
 		final CloseCallback callback = context.mock(CloseCallback.class);
 		
-		final ParameterCaptureAction<ReplyHandler> capture =
-			new ParameterCaptureAction<ReplyHandler>(3, ReplyHandler.class, null);
-		
 		// define expectations
 		context.checking(new Expectations() {{
 			one(session).sendMSG(with(equal(1)), with(equal(1)), with(same(m1)), with(any(ReplyHandler.class)));
-			will(capture); inSequence(sequence);
+			inSequence(sequence);
 			
 			one(channelHandler).channelCloseRequested(with(any(CloseChannelRequest.class)));
 			will(rejectCloseChannelRequest(0)); inSequence(sequence);
@@ -323,7 +320,11 @@ public class ChannelImplTest extends TestCase {
 		channel.sendMessage(m1, new NullReplyHandler());
 		channel.channelCloseRequested(callback);
 		
-		capture.getParameter().receivedNUL();
+		// receive a NUL
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.NUL);
+		channel.receiveNUL(frame);
+		
 		assertIsAlive(channel);
 		
 		channel.sendMessage(m2, new NullReplyHandler());

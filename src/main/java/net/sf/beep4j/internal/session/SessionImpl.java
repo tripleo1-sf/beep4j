@@ -105,13 +105,14 @@ public class SessionImpl
 	 */
 	private Greeting greeting;
 	
-	public SessionImpl(boolean initiator, SessionHandler sessionHandler, BeepStream beepStream) {
+	public SessionImpl(boolean initiator, SessionHandler sessionHandler, BeepStream beepStream, ChannelFilterChainBuilder filterChainBuilder) {
 		Assert.notNull("sessionHandler", sessionHandler);
 		Assert.notNull("beepStream", beepStream);
 		
 		this.initiator = initiator;
 		this.sessionHandler = new UnlockingSessionHandler(sessionHandler, sessionLock);
 		this.beepStream = beepStream;
+		this.filterChainBuilder = filterChainBuilder == null ? new NullChannelFilterChainBuilder() : filterChainBuilder;
 		
 		addSessionListener(beepStream);
 				
@@ -125,10 +126,6 @@ public class SessionImpl
 		closeInitiatedState = createCloseInitiatedState();
 		deadState = createDeadState();
 		currentState = initialState;
-	}
-	
-	public void setChannelFilterChainBuilder(ChannelFilterChainBuilder filterChainBuilder) {
-		this.filterChainBuilder = filterChainBuilder == null ? new NullChannelFilterChainBuilder() : filterChainBuilder;
 	}
 
 	protected DeadState createDeadState() {
@@ -158,8 +155,8 @@ public class SessionImpl
 		channel.channelOpened(channelHandler);
 	}
 		
-	protected InternalChannel createChannel(InternalSession session, String profileUri, int channelNumber) {
-		return new ChannelImpl(session, profileUri, channelNumber, filterChainBuilder, sessionLock);
+	protected InternalChannel createChannel(InternalSession session, ProfileInfo profile, int channelNumber) {
+		return new ChannelImpl(session, profile, channelNumber, filterChainBuilder, sessionLock);
 	}
 	
 	private ChannelHandler initChannel(InternalChannel channel, ChannelHandler handler) {
@@ -775,7 +772,7 @@ public class SessionImpl
 					try {
 						ChannelHandler handler = factory.createChannelHandler(info);
 						InternalChannel channel = createChannel(
-								SessionImpl.this, info.getUri(), channelNumber);
+								SessionImpl.this, info, channelNumber);
 						ChannelHandler channelHandler = initChannel(channel, handler);
 						registerChannel(channelNumber, channel);
 						channel.channelOpened(channelHandler);
@@ -851,7 +848,7 @@ public class SessionImpl
 			
 			debug("start of channel ", channelNumber, " is accepted by application: ", info.getUri());
 			
-			InternalChannel channel = createChannel(SessionImpl.this, info.getUri(), channelNumber);
+			InternalChannel channel = createChannel(SessionImpl.this, info, channelNumber);
 			ChannelHandler handler = initChannel(channel, response.getChannelHandler());
 			registerChannel(channelNumber, channel);
 			channel.channelOpened(handler);

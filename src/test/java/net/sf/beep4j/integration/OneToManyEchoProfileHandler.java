@@ -32,7 +32,9 @@ public class OneToManyEchoProfileHandler extends ChannelHandlerAdapter {
 		this.blockSize = blockSize;
 	}
 	
-	public void messageReceived(Message message, Reply handler) {
+	@Override
+	public void messageReceived(Object msg, Reply handler) {
+		Message message = (Message) msg;
 		ByteBuffer buffer = message.getContentBuffer();
 		int remaining = buffer.remaining();
 		

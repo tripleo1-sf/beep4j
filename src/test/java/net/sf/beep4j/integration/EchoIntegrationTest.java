@@ -26,20 +26,22 @@ import java.util.concurrent.Semaphore;
 import junit.framework.Assert;
 import junit.framework.TestCase;
 import net.sf.beep4j.Channel;
+import net.sf.beep4j.ChannelFilterChain;
+import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.CloseChannelCallback;
 import net.sf.beep4j.Initiator;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.ProfileInfo;
-import net.sf.beep4j.Reply;
-import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.Session;
 import net.sf.beep4j.SessionHandler;
 import net.sf.beep4j.SessionHandlerFactory;
 import net.sf.beep4j.StartChannelRequest;
 import net.sf.beep4j.StartSessionRequest;
 import net.sf.beep4j.ext.ChannelHandlerAdapter;
+import net.sf.beep4j.ext.ReplyHandlerAdapter;
 import net.sf.beep4j.ext.SessionHandlerAdapter;
+import net.sf.beep4j.filters.MessageAssemblingFilter;
 import net.sf.beep4j.transport.mina.MinaInitiator;
 import net.sf.beep4j.transport.mina.MinaListener;
 
@@ -83,12 +85,22 @@ public class EchoIntegrationTest extends TestCase {
 		SocketAddress address = new VmPipeAddress(port);
 
 		MinaListener listener = new MinaListener(acceptor);
+		listener.setChannelFilterChainBuilder(new ChannelFilterChainBuilder() {
+			public void buildFilterChain(ProfileInfo profile, ChannelFilterChain chain) {
+				chain.addLast(new MessageAssemblingFilter());
+			}
+		});
 		listener.bind(address, new EchoSessionHandlerFactory(sem));
 		
 		IoConnector connector = new VmPipeConnector();
 		EchoClientHandler client = new EchoClientHandler(profile, channels, text, sem);
 		
 		Initiator initiator = new MinaInitiator(connector);
+		initiator.setChannelFilterChainBuilder(new ChannelFilterChainBuilder() {
+			public void buildFilterChain(ProfileInfo profile, ChannelFilterChain chain) {
+				chain.addLast(new MessageAssemblingFilter());
+			}
+		});
 		initiator.connect(address, client);
 		
 		sem.acquire();
@@ -222,13 +234,9 @@ public class EchoIntegrationTest extends TestCase {
 			}
 		}
 		
-		public void messageReceived(Message message, Reply handler) {
-			throw new UnsupportedOperationException();
-		}
-		
 	}
 	
-	protected class EchoListener implements ReplyHandler {
+	protected class EchoListener extends ReplyHandlerAdapter {
 		private final Channel channel;
 		private final Semaphore semaphore;
 		private final StringBuilder builder;
@@ -244,22 +252,21 @@ public class EchoIntegrationTest extends TestCase {
 			return actual;
 		}
 		
-		public void receivedANS(Message message) {
-			String str = toString(message);
+		@Override
+		public void receivedANS(Object message) {
+			String str = toString((Message) message);
 			builder.append(str);
 		}
-		
-		public void receivedERR(Message message) {
-			throw new UnsupportedOperationException();
-		}
-		
+
+		@Override
 		public void receivedNUL() {
 			verify();
 			channel.close(new PrintingCloseCallback(channel.getSession(), semaphore));
 		}
 		
-		public void receivedRPY(Message message) {
-			builder.append(toString(message));
+		@Override
+		public void receivedRPY(Object message) {
+			builder.append(toString((Message) message));
 			verify();
 			channel.close(new PrintingCloseCallback(channel.getSession(), semaphore));
 		}

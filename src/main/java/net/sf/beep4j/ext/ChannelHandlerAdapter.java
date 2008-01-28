@@ -18,7 +18,6 @@ package net.sf.beep4j.ext;
 import net.sf.beep4j.Channel;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelRequest;
-import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.Reply;
 import net.sf.beep4j.internal.util.Assert;
@@ -85,7 +84,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	 * @param message the received message
 	 * @param reply the reply that can be used to send a reply
 	 */
-	public void messageReceived(Message message, Reply reply) {
+	public void messageReceived(Object message, Reply reply) {
 		throw new UnsupportedOperationException();
 	}
 	

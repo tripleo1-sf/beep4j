@@ -20,6 +20,6 @@ package net.sf.beep4j;
  */
 public interface ChannelFilterChainBuilder {
 	
-	void buildFilterChain(ChannelFilterChain chain);
+	void buildFilterChain(ProfileInfo profile, ChannelFilterChain chain);
 	
 }

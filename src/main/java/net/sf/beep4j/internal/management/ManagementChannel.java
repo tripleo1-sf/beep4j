@@ -39,7 +39,7 @@ public class ManagementChannel extends ChannelImpl {
 		
 		super(session, null, 0, filterChainBuilder, sessionLock);
 		
-		registerReplyHandler(0, new InitialReplyHandler(managementProfile, session));
+		registerReplyHandler(0, wrapReplyHandler(new InitialReplyHandler(managementProfile, session)));
 	}
 	
 }
