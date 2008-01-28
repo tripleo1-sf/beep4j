@@ -165,7 +165,7 @@ public final class FrameImpl implements Frame {
 	
 	@Override
 	public String toString() {
-		return "Frame[header=" + getHeader() + "]";
+		return "Frame[" + getHeader() + "]";
 	}
 
 }

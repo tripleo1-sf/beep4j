@@ -59,8 +59,7 @@ public class MinaTransport extends IoHandlerAdapter implements Transport {
 			ChannelFilterChainBuilder channelFilterChainBuilder) {
 		
 		final TCPMapping mapping = new TCPMapping(this);
-		final SessionImpl session = new SessionImpl(initiator, sessionHandler, mapping);
-		session.setChannelFilterChainBuilder(channelFilterChainBuilder);
+		final SessionImpl session = new SessionImpl(initiator, sessionHandler, mapping, channelFilterChainBuilder);
 		final DelegatingFrameHandler frameHandler = new DelegatingFrameHandler(new FrameHandlerFactory() {
 			public FrameHandler createFrameHandler() {
 				return new MessageAssembler(session);

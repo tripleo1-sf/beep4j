@@ -59,7 +59,7 @@ public class StreamParserTest extends TestCase {
 				charset.encode("Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n"));
 		
 		// define expectations
-		handler.handleFrame(frame);		
+		handler.receiveRPY(frame);		
 		mapping.checkFrame(0, 0, 52);
 		mapping.frameReceived(0, 0, 52);
 		
@@ -86,10 +86,10 @@ public class StreamParserTest extends TestCase {
 				charset.encode("Content-Type: application/beep+xml\r\n\r\n<greeting />\r\n"));
 		
 		// define expectations
-		handler.handleFrame(frame);		
+		handler.receiveRPY(frame);		
 		mapping.checkFrame(0, 0, 52);
 		mapping.frameReceived(0, 0, 52);
-		handler.handleFrame(frame);		
+		handler.receiveRPY(frame);		
 		mapping.checkFrame(0, 0, 52);
 		mapping.frameReceived(0, 0, 52);
 
@@ -138,7 +138,7 @@ public class StreamParserTest extends TestCase {
 		// define expectations
 		mapping.processMappingFrame(new String[] { "SEQ", "0", "0", "4096" });
 		mappingCtrl.setMatcher(MockControl.ARRAY_MATCHER);
-		handler.handleFrame(frame);		
+		handler.receiveRPY(frame);		
 		mapping.checkFrame(0, 0, 52);
 		mapping.frameReceived(0, 0, 52);
 		

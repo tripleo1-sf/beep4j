@@ -17,10 +17,11 @@ package net.sf.beep4j.internal;
 
 import net.sf.beep4j.ChannelFilterChain;
 import net.sf.beep4j.ChannelFilterChainBuilder;
+import net.sf.beep4j.ProfileInfo;
 
 public class NullChannelFilterChainBuilder implements ChannelFilterChainBuilder {
 
-	public void buildFilterChain(ChannelFilterChain chain) {
+	public void buildFilterChain(ProfileInfo profile, ChannelFilterChain chain) {
 		// do nothing
 	}
 

@@ -58,25 +58,28 @@ public class MessageAssemblingFilter extends ChannelFilterAdapter {
 		return parser.parse(buffer);
 	}
 
-	public void filterReceivedMSG(NextFilter next, Frame frame, Reply reply) {
+	@Override
+	public void filterMessageReceived(NextFilter next, Object frame, Reply reply) {
 		if (currentState == null) {
 			currentState = new MSGState(reply);
 		}
-		currentState.append(next, frame);
+		currentState.append(next, (Frame) frame);
 	}
 
-	public void filterReceivedANS(NextFilter next, Frame frame) {
+	@Override
+	public void filterReceivedANS(NextFilter next, Object frame) {
 		if (currentState == null) {
 			currentState = new ANSState();
 		}
-		currentState.append(next, frame);
+		currentState.append(next, (Frame) frame);
 	}
 
-	public void filterReceivedERR(NextFilter next, Frame frame) {
+	@Override
+	public void filterReceivedERR(NextFilter next, Object frame) {
 		if (currentState == null) {
 			currentState = new ERRState();
 		}
-		currentState.append(next, frame);
+		currentState.append(next, (Frame) frame);
 	}
 
 	public void filterReceivedNUL(NextFilter next) {
@@ -86,11 +89,11 @@ public class MessageAssemblingFilter extends ChannelFilterAdapter {
 		currentState.append(next, null);
 	}
 
-	public void filterReceivedRPY(NextFilter next, Frame frame) {
+	public void filterReceivedRPY(NextFilter next, Object frame) {
 		if (currentState == null) {
 			currentState = new RPYState();
 		}
-		currentState.append(next, frame);
+		currentState.append(next, (Frame) frame);
 	}
 	
 	private static interface State {

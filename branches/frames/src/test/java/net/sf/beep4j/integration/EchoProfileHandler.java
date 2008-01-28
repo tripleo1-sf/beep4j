@@ -32,13 +32,15 @@ public class EchoProfileHandler extends ChannelHandlerAdapter {
 	public void closeRequested(CloseChannelCallback callback) {
 		callback.closeAccepted();
 	}
-
-	public void messageReceived(Message message, Reply handler) {
+	
+	@Override
+	public void messageReceived(Object msg, Reply reply) {
+		Message message = (Message) msg;
 		InputStream stream = message.getInputStream();
 		MessageBuilder builder = createMessageBuilder();
 		OutputStream os = builder.getOutputStream();
 		writeTo(stream, os);
-		handler.sendRPY(builder.getMessage());
+		reply.sendRPY(builder.getMessage());
 	}
 	
 	private void writeTo(InputStream is, OutputStream os) {
@@ -51,7 +53,6 @@ public class EchoProfileHandler extends ChannelHandlerAdapter {
 		
 			os.close();
 		} catch (IOException e) {
-			// TODO: change this
 			throw new RuntimeException(e);
 		}
 	}

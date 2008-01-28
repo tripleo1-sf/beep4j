@@ -15,10 +15,9 @@
  */
 package net.sf.beep4j.internal.stream;
 
-import java.nio.ByteBuffer;
-
 import junit.framework.TestCase;
-import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
+import net.sf.beep4j.ProtocolException;
+import net.sf.beep4j.internal.session.FrameStub;
 
 import org.easymock.MockControl;
 
@@ -41,55 +40,37 @@ public class MessageAssemblerTest extends TestCase {
 		control.verify();
 	}
 	
-	private ByteBuffer getByteBuffer(int capacity) {
-		return ByteBuffer.allocate(capacity);
-	}
-	
 	public void testMSGNonFragmented() throws Exception {
-		handler.receiveMSG(0, 0, null);
-		handler.receiveMSG(0, 1, null);
+		handler.receiveMSG(createMSG(0, 0, false));
+		handler.receiveMSG(createMSG(0, 1, false));
 		control.replay();
 		
 		// test		
-		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, false, 0, 10);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.MSG, 0, 1, false, 10, 10);
-		frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
+		target.receiveMSG(createMSG(0, 0, false));
+		target.receiveMSG(createMSG(0, 1, false));
 	}
 	
 	public void testMSGFragmented() throws Exception {
-		handler.receiveMSG(0, 0, null);
+		handler.receiveMSG(createMSG(0, 0, true));
+		handler.receiveMSG(createMSG(0, 0, false));
+		handler.receiveMSG(createMSG(0, 0, true));
 		control.replay();
 		
 		// test
-		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, true, 0, 10);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.MSG, 0, 0, false, 10, 10);
-		frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.MSG, 0, 0, true, 20, 10);
-		frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
+		target.receiveMSG(createMSG(0, 0, true));
+		target.receiveMSG(createMSG(0, 0, false));
+		target.receiveMSG(createMSG(0, 0, true));
 	}
 	
 	public void testMSGMessageNumberMismatch() throws Exception {
+		handler.receiveMSG(createMSG(0, 0, true));
 		control.replay();
 		
-		DataHeader header = new DataHeader(MessageType.MSG, 0, 0, true, 0, 10);
 		// test
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
+		target.receiveMSG(createMSG(0, 0, true));
 		
-		header = new DataHeader(MessageType.MSG, 0, 1, false, 10, 10);
-		frame = new FrameImpl(header, getByteBuffer(10));
 		try {
-			target.handleFrame(frame);
+			target.receiveMSG(createMSG(0, 1, false));
 			fail("message numbers are not equal");
 		} catch (Exception e) {
 			// expected
@@ -97,17 +78,14 @@ public class MessageAssemblerTest extends TestCase {
 	}
 	
 	public void testMSGInvalidSuccessor() throws Exception {
+		handler.receiveMSG(createMSG(1, 0, true));
 		control.replay();
 		
 		// test
-		DataHeader header = new DataHeader(MessageType.MSG, 1, 0, true, 0, 20);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
+		target.receiveMSG(createMSG(1, 0, true));
 		
-		header = new DataHeader(MessageType.RPY, 1, 0, false, 20, 20);
-		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
-			target.handleFrame(frame);
+			target.receiveRPY(createRPY(1, 0, false));
 			fail("invalid successor not detected");
 		} catch (Exception e) {
 			// expected
@@ -115,139 +93,98 @@ public class MessageAssemblerTest extends TestCase {
 	}
 	
 	public void testANSNonFragmented() throws Exception {
-		handler.receiveANS(1, 0, 0, null);
-		handler.receiveANS(1, 0, 1, null);
-		handler.receiveNUL(1, 0);
+		handler.receiveANS(createANS(1, 0, false, 0));
+		handler.receiveANS(createANS(1, 0, false, 1));
+		handler.receiveNUL(createNUL(1, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, false, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, false, 20, 20, 1);
-		frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.NUL, 1, 0, false, 40, 0);
-		frame = new FrameImpl(header, getByteBuffer(0));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, false, 0));		
+		target.receiveANS(createANS(1, 0, false, 1));
+		target.receiveNUL(createNUL(1, 0));
 	}
 	
 	public void testANSFragmented() throws Exception {
-		handler.receiveANS(1, 0, 0, null);
-		handler.receiveNUL(1, 0);
+		handler.receiveANS(createANS(1, 0, true, 0));		
+		handler.receiveANS(createANS(1, 0, true, 0));		
+		handler.receiveANS(createANS(1, 0, false, 0));		
+		handler.receiveNUL(createNUL(1, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, true, 20, 20, 0);
-		frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, false, 40, 20, 0);
-		frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.NUL, 1, 0, false, 60, 0);
-		frame = new FrameImpl(header, getByteBuffer(0));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, true, 0));		
+		target.receiveANS(createANS(1, 0, true, 0));		
+		target.receiveANS(createANS(1, 0, false, 0));		
+		target.receiveNUL(createNUL(1, 0));
 	}
 	
 	public void testANSInterleaved() throws Exception {
-		handler.receiveANS(1, 0, 0, null);
-		handler.receiveANS(1, 0, 1, null);
-		handler.receiveNUL(1, 0);
+		handler.receiveANS(createANS(1, 0, true, 0));
+		handler.receiveANS(createANS(1, 0, true, 1));		
+		handler.receiveANS(createANS(1, 0, false, 0));		
+		handler.receiveANS(createANS(1, 0, false, 1));		
+		handler.receiveNUL(createNUL(1, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, true, 20, 20, 1);
-		frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, false, 40, 10, 0);
-		frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
-		
-		header = new ANSHeader(1, 0, false, 50, 10, 1);
-		frame = new FrameImpl(header, getByteBuffer(10));
-		target.handleFrame(frame);
-		
-		header = new DataHeader(MessageType.NUL, 1, 0, false, 60, 0);
-		frame = new FrameImpl(header, getByteBuffer(0));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, true, 0));
+		target.receiveANS(createANS(1, 0, true, 1));		
+		target.receiveANS(createANS(1, 0, false, 0));		
+		target.receiveANS(createANS(1, 0, false, 1));		
+		target.receiveNUL(createNUL(1, 0));
 	}
 
 	public void testANSInvalidSuccessor() throws Exception {
+		handler.receiveANS(createANS(1, 0, true, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, true, 0));
 		
-		header = new DataHeader(MessageType.RPY, 1, 0, false, 20, 20);
-		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
-			target.handleFrame(frame);
+			target.receiveRPY(createRPY(1, 0, false));
 			fail("ANS or NUL expected");
-		} catch (Exception e) {
+		} catch (ProtocolException e) {
 			// expected
 		}
 	}
 	
 	public void testANSMessageNumberMismatch() throws Exception {
-		handler.receiveANS(1, 0, 0, null);
+		handler.receiveANS(createANS(1, 0, false, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, false, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, false, 0));
 		
-		header = new ANSHeader(1, 1, false, 20, 20, 1);
-		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
-			target.handleFrame(frame);
+			target.receiveANS(createANS(1, 1, false, 1));
 			fail("message number mismatch");
-		} catch (Exception e) {
+		} catch (ProtocolException e) {
 			// expected
 		}
 	}
 	
 	public void testANSUnfinishedAnswers() throws Exception {
+		handler.receiveANS(createANS(1, 0, true, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new ANSHeader(1, 0, true, 0, 20, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(20));
-		target.handleFrame(frame);
+		target.receiveANS(createANS(1, 0, true, 0));
 		
-		header = new DataHeader(MessageType.NUL, 1, 0, false, 20, 0);
-		frame = new FrameImpl(header, getByteBuffer(20));
 		try {
-			target.handleFrame(frame);
+			target.receiveNUL(createNUL(1, 0));
 			fail("response has unfinished ANS messages");
-		} catch (Exception e) {
+		} catch (ProtocolException e) {
 			// expected
 		}
 	}
 	
 	public void testNUL() throws Exception {
-		handler.receiveNUL(1, 0);
+		handler.receiveNUL(createNUL(1, 0));
 		control.replay();
 		
 		// test
-		DataHeader header = new DataHeader(MessageType.NUL, 1, 0, false, 0, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(0));
-		target.handleFrame(frame);
+		target.receiveNUL(createNUL(1, 0));
 		
 		// verify
 		control.verify();
@@ -257,25 +194,24 @@ public class MessageAssemblerTest extends TestCase {
 		control.replay();
 		
 		// test
-		DataHeader header = new DataHeader(MessageType.NUL, 1, 0, true, 0, 0);
-		FrameImpl frame = new FrameImpl(header, getByteBuffer(0));
+		FrameStub frame = createNUL(1, 0);
+		frame.setIntermediate(true);
 		
 		try {
-			target.handleFrame(frame);
+			target.receiveNUL(frame);
 			fail("NUL frame cannot have continuation indicator set to true");
-		} catch (Exception e) {
-			// exected
-			// TODO: correct exception type
+		} catch (ProtocolException e) {
+			// expected
 		}
 		
-		header = new DataHeader(MessageType.NUL, 1, 0, false, 0, 20);
-		frame = new FrameImpl(header, getByteBuffer(20));
+		frame = createNUL(1, 0);
+		frame.setSize(20);
 		
 		try {
-			target.handleFrame(frame);
+			target.receiveNUL(frame);
 			fail("NUL frame cannot have non-zero size");
-		} catch (Exception e) {
-			// exected
+		} catch (ProtocolException e) {
+			// expected
 			// TODO: correct exception type
 		}
 
@@ -283,4 +219,40 @@ public class MessageAssemblerTest extends TestCase {
 		control.verify();
 	}
 	
+	private FrameStub createNUL(int channelNumber, int messageNumber) {
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.NUL);
+		frame.setChannelNumber(channelNumber);
+		frame.setMessageNumber(messageNumber);
+		return frame;
+	}
+	
+	private FrameStub createANS(int channelNumber, int messageNumber, boolean intermediate, int answerNumber) {
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.ANS);
+		frame.setChannelNumber(channelNumber);
+		frame.setMessageNumber(messageNumber);
+		frame.setIntermediate(intermediate);
+		frame.setAnswerNumber(answerNumber);
+		return frame;
+	}
+
+	private FrameStub createRPY(int channelNumber, int messageNumber, boolean intermediate) {
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.RPY);
+		frame.setChannelNumber(channelNumber);
+		frame.setMessageNumber(messageNumber);
+		frame.setIntermediate(intermediate);
+		return frame;
+	}
+
+	private FrameStub createMSG(int channelNumber, int messageNumber, boolean intermediate) {
+		FrameStub frame = new FrameStub();
+		frame.setType(MessageType.MSG);
+		frame.setChannelNumber(channelNumber);
+		frame.setMessageNumber(messageNumber);
+		frame.setIntermediate(intermediate);
+		return frame;
+	}
+
 }

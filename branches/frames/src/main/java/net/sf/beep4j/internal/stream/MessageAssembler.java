@@ -137,7 +137,7 @@ public class MessageAssembler implements FrameHandler {
 		public void append(Frame frame, FrameHandler handler) {
 			if (hasPreviousFrame()) {
 				validateMessageNumber(frame);
-				validateMatchingFragmentTypes(last.getType(), type);
+				validateMatchingFragmentTypes(last.getType(), frame.getType());
 			}
 			
 			validateAndIncrementSize(frame.getSize(), frame.getChannelNumber(), frame.getMessageNumber());
