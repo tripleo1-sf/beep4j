@@ -23,7 +23,7 @@ import net.sf.beep4j.internal.stream.DefaultTransportContext;
 import net.sf.beep4j.internal.stream.DelegatingFrameHandler;
 import net.sf.beep4j.internal.stream.FrameHandler;
 import net.sf.beep4j.internal.stream.FrameHandlerFactory;
-import net.sf.beep4j.internal.stream.MessageAssembler;
+import net.sf.beep4j.internal.stream.ValidatingFrameHandler;
 import net.sf.beep4j.internal.stream.StreamParser;
 import net.sf.beep4j.internal.tcp.TCPMapping;
 import net.sf.beep4j.internal.util.HexDump;
@@ -62,7 +62,7 @@ public class MinaTransport extends IoHandlerAdapter implements Transport {
 		final SessionImpl session = new SessionImpl(initiator, sessionHandler, mapping, channelFilterChainBuilder);
 		final DelegatingFrameHandler frameHandler = new DelegatingFrameHandler(new FrameHandlerFactory() {
 			public FrameHandler createFrameHandler() {
-				return new MessageAssembler(session);
+				return new ValidatingFrameHandler(session);
 			}
 		});
 		session.addSessionListener(frameHandler);
