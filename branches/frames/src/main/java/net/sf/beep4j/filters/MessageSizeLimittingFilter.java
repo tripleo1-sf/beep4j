@@ -98,7 +98,7 @@ public abstract class MessageSizeLimittingFilter extends ChannelFilterAdapter {
 		}
 	}
 	
-	protected abstract void handleMessageSizeOverflow();
+	protected abstract void handleMessageSizeOverflow(Channel channel);
 	
 	private static interface State {
 		
@@ -119,7 +119,7 @@ public abstract class MessageSizeLimittingFilter extends ChannelFilterAdapter {
 		public void frameReceived(Frame frame) {
 			messageSize += frame.getSize();
 			if (messageSize > maxMessageSize) {
-				handleMessageSizeOverflow();
+				handleMessageSizeOverflow(channel);
 			}
 		}
 		
@@ -145,7 +145,7 @@ public abstract class MessageSizeLimittingFilter extends ChannelFilterAdapter {
 			messageSizes.put(frame.getAnswerNumber(), currentSize);
 			
 			if (currentSize > maxMessageSize) {
-				handleMessageSizeOverflow();
+				handleMessageSizeOverflow(channel);
 			}
 		}
 		

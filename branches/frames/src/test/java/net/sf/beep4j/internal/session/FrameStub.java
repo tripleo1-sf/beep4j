@@ -39,6 +39,8 @@ public class FrameStub implements Frame {
 	
 	private boolean intermediate;
 	
+	private ByteBuffer byteBuffer;
+	
 	public void setChannelNumber(int channelNumber) {
 		this.channelNumber = channelNumber;
 	}
@@ -88,7 +90,16 @@ public class FrameStub implements Frame {
 	}
 
 	public ByteBuffer getByteBuffer() {
-		return ByteBuffer.allocate(getSize());
+		if (byteBuffer == null) {
+			return ByteBuffer.allocate(getSize());
+		} else {
+			return byteBuffer.asReadOnlyBuffer();
+		}
+	}
+
+	public void setByteBuffer(ByteBuffer buffer) {
+		this.byteBuffer = buffer.asReadOnlyBuffer();
+		this.size = buffer.remaining();
 	}
 
 }

@@ -17,13 +17,17 @@ package net.sf.beep4j.internal.session;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import junit.framework.TestCase;
 import net.sf.beep4j.Channel;
+import net.sf.beep4j.ChannelFilterChain;
+import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelCallback;
 import net.sf.beep4j.CloseChannelRequest;
+import net.sf.beep4j.Frame;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.ProfileInfo;
@@ -33,11 +37,13 @@ import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.SessionHandler;
 import net.sf.beep4j.StartChannelRequest;
 import net.sf.beep4j.StartSessionRequest;
+import net.sf.beep4j.filters.MessageAssemblingFilter;
 import net.sf.beep4j.internal.management.ManagementMessageBuilder;
 import net.sf.beep4j.internal.management.SaxMessageBuilder;
 import net.sf.beep4j.internal.message.DefaultMessageBuilder;
 import net.sf.beep4j.internal.stream.BeepStream;
-import net.sf.beep4j.internal.stream.MessageHandler;
+import net.sf.beep4j.internal.stream.FrameHandler;
+import net.sf.beep4j.internal.stream.MessageType;
 
 import org.hamcrest.Description;
 import org.jmock.Expectations;
@@ -75,6 +81,28 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).channelStarted(0); inSequence(sequence);
 		}});
 	}
+	
+	private static Frame createFrame(MessageType type, int channelNumber, int messageNumber, Message message) {
+		FrameStub frame = new FrameStub();
+		frame.setType(type);
+		frame.setChannelNumber(channelNumber);
+		frame.setMessageNumber(messageNumber);
+		
+		ByteBuffer buffer = message.asByteBuffer();
+		frame.setByteBuffer(buffer);
+		
+		return frame;
+	}
+	
+	private SessionImpl createSession(boolean initiator) {
+		return new SessionImpl(initiator, sessionHandler, beepStream, new ChannelFilterChainBuilder() {
+			public void buildFilterChain(ProfileInfo profile, ChannelFilterChain chain) {
+				if (profile == null) {
+					chain.addLast(new MessageAssemblingFilter());
+				}
+			}
+		});
+	}
 
 	/*
 	 * Scenario: session accepted, rejected by local peer
@@ -92,7 +120,7 @@ public class FunctionalSessionTest extends TestCase {
 		}});
 		
 		// test
-		SessionImpl session = new SessionImpl(false, sessionHandler, beepStream);
+		SessionImpl session = createSession(false);
 		session.connectionEstablished(null);
 		
 		// verify
@@ -116,9 +144,10 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).closeTransport(); inSequence(sequence);
 		}});
 		
-		SessionImpl session = new SessionImpl(true, sessionHandler, beepStream);
+		SessionImpl session = createSession(true);
 		session.connectionEstablished(null);
-		session.receiveERR(0, 0, createErrorMessage(550, "listener not available"));
+		session.receiveERR(
+				createFrame(MessageType.ERR, 0, 0, createErrorMessage(550, "listener not available")));
 		
 		// verify
 		assertIsSatisfied();
@@ -214,7 +243,7 @@ public class FunctionalSessionTest extends TestCase {
 		sendEcho(channel.channel, 1, 2, "abcdefghijk");
 		
 		try {
-			session.receiveRPY(1, 2, createEchoMessage("abcdefghijk"));
+			session.receiveRPY(createFrame(MessageType.RPY, 1, 2, createEchoMessage("abcdefghijk")));
 			fail("expects receiving message 1 on channel 1, must result in ProtocolException");
 		} catch (ProtocolException e) {
 			// expected
@@ -259,7 +288,7 @@ public class FunctionalSessionTest extends TestCase {
 		}});
 		
 		// send close channel request
-		session.receiveMSG(0, 1, request);
+		session.receiveMSG(createFrame(MessageType.MSG, 0, 1, request));
 		
 		// verify
 		assertIsSatisfied();
@@ -315,7 +344,7 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).closeTransport(); inSequence(sequence);
 		}});
 		
-		session.receiveMSG(0, 1, createCloseMessage(0));
+		session.receiveMSG(createFrame(MessageType.MSG, 0, 1, createCloseMessage(0)));
 		
 		// verify
 		assertIsSatisfied();
@@ -335,7 +364,7 @@ public class FunctionalSessionTest extends TestCase {
 		startChannelRequested(2, 1, new ProfileInfo[] { new ProfileInfo(PROFILE) }, session);
 
 		try {
-			session.receiveMSG(0, 2, createStartMessage(2, new ProfileInfo[] { new ProfileInfo(PROFILE) }));
+			session.receiveMSG(createFrame(MessageType.MSG, 0, 2, createStartMessage(2, new ProfileInfo[] { new ProfileInfo(PROFILE) })));
 			fail("starting an open channel must fail");
 		} catch (ProtocolException e) {
 			// expected
@@ -366,7 +395,8 @@ public class FunctionalSessionTest extends TestCase {
 			one(channel.handler).channelCloseRequested(with(any(CloseChannelRequest.class)));
 			will(acceptCloseChannel()); inSequence(sequence);
 
-			one(replyHandler).receivedRPY(message); inSequence(sequence);
+			// TODO: verify more strictly
+			one(replyHandler).receivedRPY(with(any(Message.class))); inSequence(sequence);
 
 			one(channel.handler).channelClosed(); inSequence(sequence);
 			
@@ -415,7 +445,7 @@ public class FunctionalSessionTest extends TestCase {
 			will(acceptSessionStart(profiles));
 		}});
 
-		final SessionImpl session = new SessionImpl(initiator, sessionHandler, beepStream);
+		final SessionImpl session = createSession(initiator);
 		
 		context.checking(new Expectations() {{
 			one(sessionHandler).sessionOpened(with(same(session)));
@@ -423,7 +453,7 @@ public class FunctionalSessionTest extends TestCase {
 		}});
 		
 		session.connectionEstablished(null);
-		session.receiveRPY(0, 0, createGreetingMessage(remoteProfiles));
+		session.receiveRPY(createFrame(MessageType.RPY, 0, 0, createGreetingMessage(remoteProfiles)));
 		
 		return session;
 	}
@@ -446,7 +476,7 @@ public class FunctionalSessionTest extends TestCase {
 		
 		// start channel
 		session.startChannel(PROFILE, channelHandler);
-		session.receiveRPY(0, 1, createProfileMessage(new ProfileInfo(PROFILE)));
+		session.receiveRPY(createFrame(MessageType.RPY, 0, 1, createProfileMessage(new ProfileInfo(PROFILE))));
 		
 		Channel channel = channelExtractor.getParameter();
 		return new ChannelStruct(channel, channelHandler);
@@ -476,7 +506,7 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).sendRPY(0, messageNumber, createProfileMessage(profile)); inSequence(sequence);
 		}});
 		
-		session.receiveMSG(0, messageNumber, createStartMessage(channelNumber, profiles));		
+		session.receiveMSG(createFrame(MessageType.MSG, 0, messageNumber, createStartMessage(channelNumber, profiles)));		
 		
 		Channel channel = channelExtractor.getParameter();
 		return new ChannelStruct(channel, channelHandler);
@@ -496,7 +526,7 @@ public class FunctionalSessionTest extends TestCase {
 			inSequence(sequence);
 		}});
 
-		session.receiveMSG(0, messageNumber, createStartMessage(channelNumber, profiles));		
+		session.receiveMSG(createFrame(MessageType.MSG, 0, messageNumber, createStartMessage(channelNumber, profiles)));		
 	}
 	
 	private void startChannelRejected(
@@ -518,7 +548,7 @@ public class FunctionalSessionTest extends TestCase {
 		}});
 		
 		session.startChannel(profiles[0], channelHandler);
-		session.receiveERR(0, messageNumber, createErrorMessage(errorCode, errorMessage));
+		session.receiveERR(createFrame(MessageType.ERR, 0, messageNumber, createErrorMessage(errorCode, errorMessage)));
 	}
 
 	private void closeChannel(
@@ -567,7 +597,7 @@ public class FunctionalSessionTest extends TestCase {
 			final SessionImpl session,
 			final int messageNumber) {
 		
-		session.receiveRPY(0, messageNumber, createOkMessage());
+		session.receiveRPY(createFrame(MessageType.RPY, 0, messageNumber, createOkMessage()));
 	}
 	
 	private void closeChannelRejected(
@@ -593,7 +623,7 @@ public class FunctionalSessionTest extends TestCase {
 			inSequence(sequence);
 		}});
 
-		session.receiveERR(0, messageNumber, createErrorMessage(550, errorMessage));
+		session.receiveERR(createFrame(MessageType.ERR, 0, messageNumber, createErrorMessage(550, errorMessage)));
 	}
 	
 	private void requestChannelClose(
@@ -626,7 +656,7 @@ public class FunctionalSessionTest extends TestCase {
 			final SessionImpl session,
 			final int channelNumber,
 			final int messageNumber) {
-		session.receiveMSG(0, messageNumber, createCloseMessage(channelNumber));
+		session.receiveMSG(createFrame(MessageType.MSG, 0, messageNumber, createCloseMessage(channelNumber)));
 	}
 
 	private void expectCloseChannelRequested(
@@ -654,7 +684,7 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).closeTransport(); inSequence(sequence);
 		}});
 
-		session.receiveRPY(0, messageNumber, createOkMessage());
+		session.receiveRPY(createFrame(MessageType.RPY, 0, messageNumber, createOkMessage()));
 	}
 	
 	private void initiateCloseSession(SessionImpl session, final int messageNumber) {
@@ -675,7 +705,7 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).closeTransport(); inSequence(sequence);
 		}});
 
-		session.receiveMSG(0, messageNumber, request);
+		session.receiveMSG(createFrame(MessageType.MSG, 0, messageNumber, request));
 	}
 	
 	private void closeSessionRequestedReject(SessionImpl session, final int messageNumber) {
@@ -685,7 +715,7 @@ public class FunctionalSessionTest extends TestCase {
 			one(beepStream).sendERR(0, messageNumber, createErrorMessage(550, "still working"));
 		}});
 
-		session.receiveMSG(0, messageNumber, request);
+		session.receiveMSG(createFrame(MessageType.MSG, 0, messageNumber, request));
 	}
 	
 	private ReplyHandler sendEcho(Channel channel, final int channelNumber, final int messageNumber, String content) throws IOException {
@@ -704,7 +734,7 @@ public class FunctionalSessionTest extends TestCase {
 	}
 	
 	private void receiveEcho(
-			final MessageHandler messageHandler, 
+			final FrameHandler frameHandler, 
 			final ReplyHandler handler, 
 			final int channelNumber, 
 			final int messageNumber, 
@@ -712,37 +742,38 @@ public class FunctionalSessionTest extends TestCase {
 		
 		final Message reply = createEchoMessage(content);
 		expectReceiveEcho(handler, reply);
-		doReceiveEcho(messageHandler, channelNumber, messageNumber, reply);
+		doReceiveEcho(frameHandler, channelNumber, messageNumber, reply);
 	}
 
 	private void doReceiveEcho(
-			final MessageHandler messageHandler,
+			final FrameHandler frameHandler,
 			final int channelNumber, final int messageNumber,
 			final Message reply) {
-		messageHandler.receiveRPY(channelNumber, messageNumber, reply);
+		frameHandler.receiveRPY(createFrame(MessageType.RPY, channelNumber, messageNumber, reply));
 	}
 
 	private void expectReceiveEcho(
 			final ReplyHandler handler,
 			final Message reply) {
 		context.checking(new Expectations() {{ 
-			one(handler).receivedRPY(reply); inSequence(sequence);
+			one(handler).receivedRPY(with(any(Object.class)));
+			inSequence(sequence);
 		}});
 	}
 	
 	private void sendAndReceiveEcho(
-			MessageHandler messageHandler, 
+			FrameHandler frameHandler, 
 			Channel channel, 
 			int channelNumber, 
 			int messageNumber, 
 			String content) throws IOException {
 		
 		ReplyHandler handler = sendEcho(channel, channelNumber, messageNumber, content);
-		receiveEcho(messageHandler, handler, channelNumber, messageNumber, content);
+		receiveEcho(frameHandler, handler, channelNumber, messageNumber, content);
 	}
 	
 	private void receiveAndReplyEcho(
-			final MessageHandler messageHandler, 
+			final FrameHandler frameHandler, 
 			final ChannelStruct channel,
 			final int channelNumber, 
 			final int messageNumber, 
@@ -756,11 +787,11 @@ public class FunctionalSessionTest extends TestCase {
 		
 		// expectations
 		context.checking(new Expectations() {{
-			one(channel.handler).messageReceived(with(equal(request)), with(any(Reply.class)));
+			one(channel.handler).messageReceived(with(any(Object.class)), with(any(Reply.class)));
 			will(extractReply); inSequence(sequence);
 		}});
 		
-		messageHandler.receiveMSG(channelNumber, messageNumber, request);
+		frameHandler.receiveMSG(createFrame(MessageType.MSG, channelNumber, messageNumber, request));
 		
 		Reply responseHandler = extractReply.getParameter();
 		

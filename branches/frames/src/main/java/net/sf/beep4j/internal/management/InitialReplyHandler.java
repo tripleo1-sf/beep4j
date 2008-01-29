@@ -49,8 +49,8 @@ class InitialReplyHandler implements ReplyHandler {
 	
 	public void receivedERR(Object msg) {
 		Message message = (Message) msg;
-		profile.receivedError(message);
-		session.sessionStartDeclined();
+		BEEPError error = profile.receivedError(message);
+		session.sessionStartDeclined(error.getCode(), error.getMessage());
 	}
 	
 	public void receivedANS(Object message) {

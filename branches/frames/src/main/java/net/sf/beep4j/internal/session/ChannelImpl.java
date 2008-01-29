@@ -154,7 +154,7 @@ public class ChannelImpl implements Channel, InternalChannel {
 			
 			int messageNumber = frame.getMessageNumber();
 			if (messageNumber != holder.getMessageNumber()) {
-				throw new ProtocolException("next expected reply "
+				throw new ProtocolException("next expected reply"
 						+ " on channel " + frame.getChannelNumber()
 						+ " has message number " 
 						+ holder.getMessageNumber()
