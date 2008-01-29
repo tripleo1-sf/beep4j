@@ -52,6 +52,6 @@ public interface InternalSession extends Session {
 	
 	void sessionStartAccepted(Greeting greeting);
 	
-	void sessionStartDeclined();
+	void sessionStartDeclined(int code, String message);
 	
 }

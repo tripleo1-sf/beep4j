@@ -422,9 +422,13 @@ public class SessionImpl
 	 * This method is invoked by the management profile when the session start
 	 * is declined (e.g. because the other peer is unavailable).
 	 */
-	public void sessionStartDeclined() {
-		setCurrentState(deadState);
-		beepStream.closeTransport();
+	public void sessionStartDeclined(int code, String message) {
+		try {
+			sessionHandler.sessionStartDeclined(code, message);
+		} finally {
+			setCurrentState(deadState);
+			beepStream.closeTransport();
+		}
 	}
 	
 	/*
