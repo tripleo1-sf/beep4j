@@ -21,18 +21,18 @@ import net.sf.beep4j.internal.session.FrameStub;
 
 import org.easymock.MockControl;
 
-public class MessageAssemblerTest extends TestCase {
+public class ValidatingFrameHandlerTest extends TestCase {
 	
 	private MockControl control;
 	private FrameHandler handler;
-	private MessageAssembler target;
+	private ValidatingFrameHandler target;
 
 	@Override
 	protected void setUp() throws Exception {
 		control = MockControl.createStrictControl(FrameHandler.class);
 		control.setDefaultMatcher(MockControl.ALWAYS_MATCHER);
 		handler = (FrameHandler) control.getMock();
-		target = new MessageAssembler(handler);
+		target = new ValidatingFrameHandler(handler);
 	}
 	
 	@Override

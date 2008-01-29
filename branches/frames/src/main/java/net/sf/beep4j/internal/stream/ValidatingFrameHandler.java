@@ -29,15 +29,15 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Simon Raess
  */
-public class MessageAssembler implements FrameHandler {
+public class ValidatingFrameHandler implements FrameHandler {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(MessageAssembler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ValidatingFrameHandler.class);
 	
 	private final FrameHandler handler;
 	
 	private State currentState;
 
-	public MessageAssembler(FrameHandler handler) {
+	public ValidatingFrameHandler(FrameHandler handler) {
 		this.handler = handler;
 	}
 	
