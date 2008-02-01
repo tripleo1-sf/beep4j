@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.beep4j.Frame;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.ProtocolException;
 
 import org.slf4j.Logger;

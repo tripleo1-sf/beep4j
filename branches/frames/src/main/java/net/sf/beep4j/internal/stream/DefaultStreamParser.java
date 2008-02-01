@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 
+import net.sf.beep4j.MessageType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

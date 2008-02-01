@@ -16,6 +16,7 @@
 package net.sf.beep4j.internal.stream;
 
 import junit.framework.TestCase;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.ProtocolException;
 import net.sf.beep4j.internal.session.FrameStub;
 

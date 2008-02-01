@@ -2,7 +2,6 @@ package net.sf.beep4j;
 
 import java.nio.ByteBuffer;
 
-import net.sf.beep4j.internal.stream.MessageType;
 
 public interface Frame {
 	

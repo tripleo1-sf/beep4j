@@ -18,6 +18,7 @@ package net.sf.beep4j.internal.util;
 import java.io.IOException;
 import java.io.Reader;
 
+
 /**
  * Reader implementation that reads from a CharSequence. It's odd that
  * this kind of reader does not exist in the standard Java library. It

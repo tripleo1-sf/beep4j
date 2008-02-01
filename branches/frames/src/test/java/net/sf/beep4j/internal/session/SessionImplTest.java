@@ -22,6 +22,7 @@ import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageStub;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.NullCloseCallback;
 import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.Reply;
@@ -37,7 +38,6 @@ import net.sf.beep4j.internal.management.Greeting;
 import net.sf.beep4j.internal.management.ManagementProfile;
 import net.sf.beep4j.internal.stream.BeepStream;
 import net.sf.beep4j.internal.stream.FrameHandler;
-import net.sf.beep4j.internal.stream.MessageType;
 
 import org.apache.mina.transport.vmpipe.VmPipeAddress;
 import org.jmock.Expectations;
