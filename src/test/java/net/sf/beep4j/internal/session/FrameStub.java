@@ -19,7 +19,7 @@ package net.sf.beep4j.internal.session;
 import java.nio.ByteBuffer;
 
 import net.sf.beep4j.Frame;
-import net.sf.beep4j.internal.stream.MessageType;
+import net.sf.beep4j.MessageType;
 
 /**
  * @author sir

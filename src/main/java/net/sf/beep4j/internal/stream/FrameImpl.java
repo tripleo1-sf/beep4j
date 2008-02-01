@@ -18,6 +18,7 @@ package net.sf.beep4j.internal.stream;
 import java.nio.ByteBuffer;
 
 import net.sf.beep4j.Frame;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.transport.Transport;

@@ -18,6 +18,7 @@ package net.sf.beep4j.internal.stream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.ProtocolException;
 import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.internal.util.ByteUtil;

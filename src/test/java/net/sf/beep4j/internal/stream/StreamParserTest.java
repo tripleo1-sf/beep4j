@@ -24,6 +24,8 @@ import java.nio.charset.Charset;
 
 import junit.framework.TestCase;
 
+import net.sf.beep4j.MessageType;
+
 import org.easymock.MockControl;
 
 public class StreamParserTest extends TestCase {

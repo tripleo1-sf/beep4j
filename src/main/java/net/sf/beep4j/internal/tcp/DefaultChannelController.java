@@ -20,10 +20,10 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 
 import net.sf.beep4j.Message;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.ProtocolException;
 import net.sf.beep4j.internal.stream.DataHeader;
 import net.sf.beep4j.internal.stream.FrameImpl;
-import net.sf.beep4j.internal.stream.MessageType;
 import net.sf.beep4j.internal.stream.DataHeader.ANSHeader;
 import net.sf.beep4j.internal.util.Assert;
 import net.sf.beep4j.transport.Transport;

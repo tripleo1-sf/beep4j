@@ -30,6 +30,7 @@ import net.sf.beep4j.CloseChannelRequest;
 import net.sf.beep4j.Frame;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.ProtocolException;
 import net.sf.beep4j.Reply;
@@ -43,7 +44,6 @@ import net.sf.beep4j.internal.management.SaxMessageBuilder;
 import net.sf.beep4j.internal.message.DefaultMessageBuilder;
 import net.sf.beep4j.internal.stream.BeepStream;
 import net.sf.beep4j.internal.stream.FrameHandler;
-import net.sf.beep4j.internal.stream.MessageType;
 
 import org.hamcrest.Description;
 import org.jmock.Expectations;

@@ -22,12 +22,12 @@ import net.sf.beep4j.CloseChannelCallback;
 import net.sf.beep4j.CloseChannelRequest;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageStub;
+import net.sf.beep4j.MessageType;
 import net.sf.beep4j.NullReplyHandler;
 import net.sf.beep4j.ProfileInfo;
 import net.sf.beep4j.ReplyHandler;
 import net.sf.beep4j.internal.NullChannelFilterChainBuilder;
 import net.sf.beep4j.internal.management.CloseCallback;
-import net.sf.beep4j.internal.stream.MessageType;
 
 import org.hamcrest.Description;
 import org.jmock.Expectations;
