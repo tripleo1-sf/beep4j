@@ -109,9 +109,6 @@ final class SlidingWindow {
 		return (int) (getEnd() - position);
 	}
 	
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
 		return "[start=" + start + ",position=" + position + ",window=" + windowSize + "]";
