@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import net.sf.beep4j.CloseChannelCallback;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
-import net.sf.beep4j.Reply;
+import net.sf.beep4j.ResponseHandler;
 import net.sf.beep4j.ext.ChannelHandlerAdapter;
 
 public class EchoProfileHandler extends ChannelHandlerAdapter {
@@ -33,9 +33,9 @@ public class EchoProfileHandler extends ChannelHandlerAdapter {
 		callback.closeAccepted();
 	}
 
-	public void messageReceived(Message message, Reply handler) {
+	public void messageReceived(Message message, ResponseHandler handler) {
 		InputStream stream = message.getInputStream();
-		MessageBuilder builder = createMessageBuilder();
+		MessageBuilder builder = handler.createMessageBuilder();
 		OutputStream os = builder.getOutputStream();
 		writeTo(stream, os);
 		handler.sendRPY(builder.getMessage());

@@ -23,7 +23,7 @@ import java.net.SocketAddress;
  * 
  * @author Simon Raess
  */
-public interface Listener extends Peer {
+public interface Listener {
 	
 	/**
 	 * Binds the given SocketAddress. Whenever a new SessionHandler

@@ -15,17 +15,9 @@
  */
 package net.sf.beep4j.transport.mina;
 
-import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.SessionHandler;
-import net.sf.beep4j.internal.session.SessionImpl;
-import net.sf.beep4j.internal.stream.DefaultStreamParser;
-import net.sf.beep4j.internal.stream.DefaultTransportContext;
-import net.sf.beep4j.internal.stream.DelegatingFrameHandler;
-import net.sf.beep4j.internal.stream.FrameHandler;
-import net.sf.beep4j.internal.stream.FrameHandlerFactory;
-import net.sf.beep4j.internal.stream.MessageAssembler;
-import net.sf.beep4j.internal.stream.MessageHandler;
-import net.sf.beep4j.internal.stream.StreamParser;
+import net.sf.beep4j.internal.SessionImpl;
+import net.sf.beep4j.internal.TransportMapping;
 import net.sf.beep4j.internal.tcp.TCPMapping;
 import net.sf.beep4j.internal.util.HexDump;
 import net.sf.beep4j.transport.LoggingTransportContext;
@@ -54,25 +46,9 @@ public class MinaTransport extends IoHandlerAdapter implements Transport {
 	
 	private TransportContext context;
 	
-	public MinaTransport(
-			boolean initiator, 
-			SessionHandler sessionHandler, 
-			ChannelFilterChainBuilder channelFilterChainBuilder) {
-		
-		final TCPMapping mapping = new TCPMapping(this);
-		final SessionImpl session = new SessionImpl(initiator, sessionHandler, mapping);
-		session.setChannelFilterChainBuilder(channelFilterChainBuilder);
-		final MessageHandler messageHandler = session;
-		final DelegatingFrameHandler frameHandler = new DelegatingFrameHandler(new FrameHandlerFactory() {
-			public FrameHandler createFrameHandler() {
-				return new MessageAssembler(messageHandler);
-			}
-		});
-		session.addSessionListener(frameHandler);
-		
-		final StreamParser parser = new DefaultStreamParser(frameHandler, mapping);
-		final TransportContext target = new DefaultTransportContext(session, parser);
-		context = new LoggingTransportContext(target);
+	public MinaTransport(boolean initiator, SessionHandler sessionHandler) {
+		TransportMapping mapping = new TCPMapping(this);
+		context = new LoggingTransportContext(new SessionImpl(initiator, sessionHandler, mapping));
 	}
 	
 	public void sendBytes(java.nio.ByteBuffer buffer) {
@@ -112,13 +88,16 @@ public class MinaTransport extends IoHandlerAdapter implements Transport {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("received " + buffer.remaining() + " bytes");
 		}
+		if (DATA_LOG.isDebugEnabled()) {
+			DATA_LOG.debug(HexDump.dump(buffer.buf()));
+		}
 		context.messageReceived(buffer.buf());
 	}
 	
 	@Override
 	public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("caught exception", cause);
+			LOG.debug("caugth exception", cause);
 		}
 		context.exceptionCaught(cause);
 	}

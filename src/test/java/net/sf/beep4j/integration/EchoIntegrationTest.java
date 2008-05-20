@@ -31,8 +31,8 @@ import net.sf.beep4j.Initiator;
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
 import net.sf.beep4j.ProfileInfo;
-import net.sf.beep4j.Reply;
-import net.sf.beep4j.ReplyHandler;
+import net.sf.beep4j.ReplyListener;
+import net.sf.beep4j.ResponseHandler;
 import net.sf.beep4j.Session;
 import net.sf.beep4j.SessionHandler;
 import net.sf.beep4j.SessionHandlerFactory;
@@ -79,7 +79,6 @@ public class EchoIntegrationTest extends TestCase {
 		Semaphore sem = new Semaphore(-channels);
 		
 		IoAcceptor acceptor = new VmPipeAcceptor();
-		
 		SocketAddress address = new VmPipeAddress(port);
 
 		MinaListener listener = new MinaListener(acceptor);
@@ -222,13 +221,13 @@ public class EchoIntegrationTest extends TestCase {
 			}
 		}
 		
-		public void messageReceived(Message message, Reply handler) {
+		public void messageReceived(Message message, ResponseHandler handler) {
 			throw new UnsupportedOperationException();
 		}
 		
 	}
 	
-	protected class EchoListener implements ReplyHandler {
+	protected class EchoListener implements ReplyListener {
 		private final Channel channel;
 		private final Semaphore semaphore;
 		private final StringBuilder builder;
@@ -244,21 +243,21 @@ public class EchoIntegrationTest extends TestCase {
 			return actual;
 		}
 		
-		public void receivedANS(Message message) {
+		public void receiveANS(Message message) {
 			String str = toString(message);
 			builder.append(str);
 		}
 		
-		public void receivedERR(Message message) {
+		public void receiveERR(Message message) {
 			throw new UnsupportedOperationException();
 		}
 		
-		public void receivedNUL() {
+		public void receiveNUL() {
 			verify();
 			channel.close(new PrintingCloseCallback(channel.getSession(), semaphore));
 		}
 		
-		public void receivedRPY(Message message) {
+		public void receiveRPY(Message message) {
 			builder.append(toString(message));
 			verify();
 			channel.close(new PrintingCloseCallback(channel.getSession(), semaphore));

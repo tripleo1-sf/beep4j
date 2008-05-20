@@ -21,7 +21,7 @@ package net.sf.beep4j;
  * callback methods which are invoked when the channel is established
  * ({@link #channelOpened(Channel)}), when a request from the
  * remote peer is received 
- * ({@link #receiveRequest(Channel, Message, Reply)}), or 
+ * ({@link #receiveRequest(Channel, Message, ResponseHandler)}), or 
  * when the channel has been closed
  * ({@link #channelClosed(Channel)}).
  * 
@@ -38,14 +38,22 @@ public interface ChannelHandler {
 	void channelOpened(Channel c);
 	
 	/**
+	 * Invoked by the framework when the channel could not be started.
+	 * 
+	 * @param code the error code
+	 * @param message the human readable error message
+	 */
+	void channelStartFailed(int code, String message);
+	
+	/**
 	 * Invoked by the framework when the other peer sent a message
 	 * to this peer on this channel. 
 	 * 
 	 * @param c the channel on which the message was received
 	 * @param message the received message
-	 * @param reply the handler used to return a response.
+	 * @param handler the handler used to return a response.
 	 */
-	void messageReceived(Message message, Reply reply);
+	void messageReceived(Message message, ResponseHandler handler);
 	
 	/**
 	 * Invoked by the framework when the other peer requested to
@@ -53,7 +61,7 @@ public interface ChannelHandler {
 	 * 
 	 * @param request the request
 	 */
-	void channelCloseRequested(CloseChannelRequest request);
+	void closeRequested(CloseChannelRequest request);
 	
 	/**
 	 * Invoked by the framework when the other peer decided to close

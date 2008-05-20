@@ -18,7 +18,6 @@ package net.sf.beep4j.transport.mina;
 import java.io.IOException;
 import java.net.SocketAddress;
 
-import net.sf.beep4j.ChannelFilterChainBuilder;
 import net.sf.beep4j.Listener;
 import net.sf.beep4j.SessionHandler;
 import net.sf.beep4j.SessionHandlerFactory;
@@ -29,7 +28,7 @@ import org.apache.mina.common.IoHandler;
 import org.apache.mina.common.IoHandlerAdapter;
 import org.apache.mina.common.IoSession;
 
-public class MinaListener extends AbstractMinaPeer implements Listener {
+public class MinaListener implements Listener {
 	
 	private static final String KEY = "beep.transport";
 	
@@ -42,7 +41,7 @@ public class MinaListener extends AbstractMinaPeer implements Listener {
 	
 	public void bind(SocketAddress address, SessionHandlerFactory factory) throws IOException {
 		Assert.notNull("factory", factory);
-		IoHandler handler = new BEEPIoHandler(factory, filterChainBuilder);
+		IoHandler handler = new BEEPIoHandler(factory);
 		acceptor.bind(address, handler);
 	}
 	
@@ -54,17 +53,14 @@ public class MinaListener extends AbstractMinaPeer implements Listener {
 		
 		private final SessionHandlerFactory factory;
 		
-		private final ChannelFilterChainBuilder filterChainBuilder;
-		
-		public BEEPIoHandler(SessionHandlerFactory factory, ChannelFilterChainBuilder builder) {
+		public BEEPIoHandler(SessionHandlerFactory factory) {
 			this.factory = factory;
-			this.filterChainBuilder = builder;
 		}
 		
 		@Override
 		public void sessionOpened(IoSession session) throws Exception {
 			SessionHandler handler = factory.createSessionHandler();
-			MinaTransport transport = new MinaTransport(false, handler, filterChainBuilder);
+			MinaTransport transport = new MinaTransport(false, handler);
 			session.setAttribute(KEY, transport);
 			transport.sessionOpened(session);
 		}

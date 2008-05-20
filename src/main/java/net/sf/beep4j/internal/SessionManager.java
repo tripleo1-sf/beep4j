@@ -15,13 +15,11 @@
  */
 package net.sf.beep4j.internal;
 
+import net.sf.beep4j.CloseChannelRequest;
 import net.sf.beep4j.ProfileInfo;
-import net.sf.beep4j.internal.management.CloseCallback;
 
 /**
- * The SessionManager is used to start / close channels and to close
- * a session. It is the interface to the Session as seen by the
- * ChannelManagementProfile.
+ * The SessionManager is used to start / close channels.
  * 
  * @author Simon Raess
  */
@@ -38,13 +36,13 @@ public interface SessionManager {
 	
 	/**
 	 * Requests to close the channel identified by the given channel number.
-	 * The callback can be used to either accept (resulting in a close channel) or
-	 * decline (in which case the channel stays open).
+	 * The request can either be accepted (resulting in a close channel) or
+	 * declined (in which case the channel stays open).
 	 * 
 	 * @param channelNumber the channel number
-	 * @param callback the callback that gets notified about the outcome
+	 * @param request the close request
 	 */
-	void channelCloseRequested(int channelNumber, CloseCallback callback);
+	void channelCloseRequested(int channelNumber, CloseChannelRequest request);
 	
 	/**
 	 * Closes the session.

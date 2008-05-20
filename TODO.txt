@@ -1,19 +1,21 @@
-- consider decorator style implementation for filtering on Channel interface
-  - first, the state must be considered
-  - then the chain can be called
-  - so the decorator must be based somehow on the state classes?
 
-- exception handling on client classes (handlers)
-  - SessionHandler, ChannelHandler, and ReplyHandler
-  - allow handlers to throw any exception?
-  - catch exceptions and
-    - terminate session?
-    - delegate back to the handlers? e.g. ChannelHandler#exceptionCaught?
+- synchronization
+  - currently, all external access to the session is synchronized
+  - however, beep4j calls application code (handlers) while still holding
+    the session monitor
+  - this could lead to deadlock (depending on how the application is programmed)
+
+- ChannelFilter
+  - same as IoFilter in MINA
+  - filter methods on Channel as well as ChannelHandler
+  - allow implementation of cross-cutting concerns
   
 - Channel
   - add state to channel?
   - Channel#setAttribute(name,value)
-  - same for Session?
+
+- ChannelHandler
+  - messageReceived(msg:Object,handler:ResponseHandler)
 
 - logging
   - add context: remote peer address, ...
@@ -30,9 +32,48 @@
       processEvents(buf)
       follow()
     }
+  
+- callback interface vs. request object?
+
+  - StartChannelRequest / StartChannelCallback
+  - CloseChannelRequest / CloseChannelCallback
+  
+  - callback
+    - executes immediately (from the callstack of the application)
+  - request object
+    - executes after the application code returns
+  - we have StartSessionRequest and StartChannelRequest ...
+  - ... but CloseCallback and CloseChannelCallback
+  - some tiny difference: the StartSessionRequest is used to collect profiles
+  - CloseChannelCallback#closeAccepted / closeDeclined
+    - when passed to the application, it should be named accept / decline
+    - because that's how our naming convention is:
+      - callback methods are always named like event listener methods
+      - action methods are named like normal Java methods, i.e. verb[object]()
+    - for consistency reasons, we probably need a CloseChannelRequest
+  
+- SessionHandler
+  - add method startChannelFailed?
+  - add method exceptionCaught?
+
+- ChannelManagementProfile
+  - how to handle close and close requests of channel 0
+  - method ChannelManagementProfile#closeRequested?
 
 - support Content-Transfer-Encoding: base64, (quoted-printable)
 
+- review of exception handling on callback interfaces
+  - SessionHandler
+  - ChannelHandler
+  - ReplyListener
+  
+  - what is a sensitive action to these kind of exception?
+    - abort session?
+    - log and silently ignore exception? log into special application log?
+    - ???
+  
+- general review of exception handling
+    
 - GenericSessionHandler -> SessionHandler
   - factory:ChannelHandlerFactory
   - advertisedProfiles:String[]
@@ -42,45 +83,14 @@
   
   - maybe desired, wait for user feedback
 
-  
-- logging
-  - net.sf.beep4j.transport: logging of transport layer events
-  - net.sf.beep4j.transport.DATA: all data passing through the transport layer
-
-
-- next tasks
-
-  - change internals to frame handling
-    - API changes
-    - support assembling messages in ChannelHandler or ChannelFilter
-    - support preemptive ERR replies (reply to incoming message)
-      - i.e. do not call ChannelHandler.messageReceived when premature ERR was created
-      - see also section 2.6.3 of the BEEP specification
-    - supporting receiving preemptive ERR replies seems not possible
-      - message will already be waiting for transport in the ChannelController
-      - there is no way to stop that (feedback from session to stream layer...)
-    - ReplyHandlerWrapper must be a bit more conservative about completing replies
-  - allow termination of Session (i.e. dropping TCP connection)
-  - filtering
-    - review ChannelFilter interface
-    - write LoggingChannelFilter, just for fun
-  - logging
-    - context (channel number, remote peer, ...)
-    - low-level BEEP logging
- 
-  
-ChannelHandler
-+receivedMSG(message:Object,reply:Reply)
-
-ReplyHandler
-+receivedRPY(message:Object)
-+receivedERR(message:Object)
-+receivedANS(message:Object)
-+receivedNUL(message:Object)
-
-- message is either a Frame, a Message, or an arbitrary application object
-
-- create BeepFrameSequencingValidator
-- replaces MessageAssembler
-- validates the various BEEP sequencing constraints
-- ChannelFilter / ChannelHandler / ReplyHandler can be sure that those constraints hold
+- ideas
+  - StartSessionRequest -> StartSessionEvent
+    -> no, it is a request, not an event
+  - StartChannelRequest -> StartChannelEvent
+    -> no, it is a request, not an event
+  - Session#close(:CloseCallback)
+    - then we have SessionHandler#channelClosed and CloseCallback#closeAccepted
+    - the same information at two places? maybe this makes sense, maybe not
+    -> leave it as it is at the moment
+  - tighter coupling between Mina and beepj?
+    - could easily be reintroduced later

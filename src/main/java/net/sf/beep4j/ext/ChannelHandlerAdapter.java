@@ -18,10 +18,10 @@ package net.sf.beep4j.ext;
 import net.sf.beep4j.Channel;
 import net.sf.beep4j.ChannelHandler;
 import net.sf.beep4j.CloseChannelRequest;
-import net.sf.beep4j.Message;
-import net.sf.beep4j.MessageBuilder;
-import net.sf.beep4j.Reply;
 import net.sf.beep4j.internal.util.Assert;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base implementation for ChannelHandler implementors. Implement the remaining
@@ -30,6 +30,8 @@ import net.sf.beep4j.internal.util.Assert;
  * @author Simon Raess
  */
 public abstract class ChannelHandlerAdapter implements ChannelHandler {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(ChannelHandlerAdapter.class);
 	
 	/**
 	 * The associated Channel object.
@@ -44,15 +46,6 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	protected Channel getChannel() {
 		return channel;
 	}
-	
-	/**
-	 * Creates a MessageBuilder for a new Message.
-	 * 
-	 * @return a newly instantiated MessageBuilder
-	 */
-	protected MessageBuilder createMessageBuilder() {
-		return channel.createMessageBuilder();
-	}
 
 	/**
 	 * This method ignores this event. If you want to react to it
@@ -62,7 +55,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	 * @param message the diagnostic message
 	 */
 	public void channelStartFailed(int code, String message) {
-		// ignored
+		LOG.debug("starting channel failed: " + code + ",'" + message + "'");
 	}
 	
 	/**
@@ -74,19 +67,8 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	 */
 	public void channelOpened(Channel channel) {
 		Assert.notNull("channel", channel);
+		LOG.debug("channel opened");
 		this.channel = channel;
-	}
-	
-	/**
-	 * Notifies this handler that a message has been received. If you expect
-	 * messages to be received, implement this method. This default implementation
-	 * throws an exception.
-	 * 
-	 * @param message the received message
-	 * @param reply the reply that can be used to send a reply
-	 */
-	public void messageReceived(Message message, Reply reply) {
-		throw new UnsupportedOperationException();
 	}
 	
 	/**
@@ -97,7 +79,8 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	 * 
 	 * @param request the request to be declined or accepted
 	 */
-	public void channelCloseRequested(CloseChannelRequest request) {
+	public void closeRequested(CloseChannelRequest request) {
+		LOG.debug("close of channel requested: accepted");
 		request.accept();
 	}
 	
@@ -106,6 +89,7 @@ public abstract class ChannelHandlerAdapter implements ChannelHandler {
 	 * method sets the channel reference to null.
 	 */
 	public void channelClosed() {
+		LOG.debug("channel closed");
 		this.channel = null;
 	}
 

@@ -53,9 +53,9 @@ public interface Channel {
 	 * the reply listener.
 	 * 
 	 * @param message the message to be sent
-	 * @param replyHandler the listener receiving the reply
+	 * @param listener the listener receiving the reply
 	 */
-	void sendMessage(Message message, ReplyHandler replyHandler);
+	void sendMessage(Message message, ReplyListener listener);
 	
 	/**
 	 * Closes the channel. The channel is 

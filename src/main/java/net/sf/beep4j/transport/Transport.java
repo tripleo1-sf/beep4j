@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 
 /**
  * The Transport interface has to be implemented by the transport
- * layer.
+ * layer
  * 
  * @author Simon Raess
  */

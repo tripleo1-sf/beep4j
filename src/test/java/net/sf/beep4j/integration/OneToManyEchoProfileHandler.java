@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 
 import net.sf.beep4j.Message;
 import net.sf.beep4j.MessageBuilder;
-import net.sf.beep4j.Reply;
+import net.sf.beep4j.ResponseHandler;
 import net.sf.beep4j.ext.ChannelHandlerAdapter;
 
 public class OneToManyEchoProfileHandler extends ChannelHandlerAdapter {
@@ -32,12 +32,12 @@ public class OneToManyEchoProfileHandler extends ChannelHandlerAdapter {
 		this.blockSize = blockSize;
 	}
 	
-	public void messageReceived(Message message, Reply handler) {
+	public void messageReceived(Message message, ResponseHandler handler) {
 		ByteBuffer buffer = message.getContentBuffer();
 		int remaining = buffer.remaining();
 		
 		while (remaining > 0) {
-			MessageBuilder builder = createMessageBuilder();
+			MessageBuilder builder = handler.createMessageBuilder();
 			int size = Math.min(blockSize, remaining);
 			buffer.limit(buffer.position() + size);
 			builder.getContentBuffer(size).put(buffer);
