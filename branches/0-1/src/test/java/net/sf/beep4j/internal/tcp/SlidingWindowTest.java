@@ -104,5 +104,18 @@ public class SlidingWindowTest extends TestCase {
 			// expected
 		}
 	}
+	
+	public void testPositionWrappedStartNot() throws Exception {
+		SlidingWindow window = new SlidingWindow(SlidingWindow.MAX - 10, 50);
+		window.moveBy(20);
+		assertEquals(30, window.remaining());
+		assertEquals(SlidingWindow.MAX - 10, window.getStart());
+	}
+	
+	public void testWrappedStartAndEnd() throws Exception {
+		SlidingWindow window = new SlidingWindow(SlidingWindow.MAX - 10, 50);
+		assertEquals(50, window.remaining());
+		assertEquals(SlidingWindow.MAX - 10, window.getStart());
+	}
 
 }
