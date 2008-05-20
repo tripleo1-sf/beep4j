@@ -59,6 +59,12 @@ public class DefaultChannelController implements ChannelController {
 		this.window = new SlidingWindow(window);
 	}
 	
+	private long incrementSequenceNumber(int messageSize) {
+		long nextSeqno = this.seqno;
+		this.seqno = (this.seqno + messageSize) % (1L << 32);
+		return nextSeqno;
+	}
+
 	public void updateSendWindow(long ackno, int size) {
 		LOG.debug("update send window: ackno=" + ackno + ",window=" + size);
 		senderWindow.slide(ackno, size);
@@ -74,7 +80,7 @@ public class DefaultChannelController implements ChannelController {
 				seqno, 
 				buffer.remaining(), answerNumber);
 
-		seqno += buffer.remaining();
+		incrementSequenceNumber(buffer.remaining());
 		
 		Frame frame = new Frame(header, buffer);
 		enqueueFrame(frame);
@@ -89,7 +95,7 @@ public class DefaultChannelController implements ChannelController {
 				channel, messageNumber, false, 
 				seqno, buffer.remaining());
 		
-		seqno += buffer.remaining();
+		incrementSequenceNumber(buffer.remaining());
 		
 		Frame frame = new Frame(header, buffer);
 		enqueueFrame(frame);
@@ -104,7 +110,7 @@ public class DefaultChannelController implements ChannelController {
 				channel, messageNumber, false, 
 				seqno, buffer.remaining());
 		
-		seqno += buffer.remaining();
+		incrementSequenceNumber(buffer.remaining());
 		
 		Frame frame = new Frame(header, buffer);
 		enqueueFrame(frame);
@@ -131,15 +137,13 @@ public class DefaultChannelController implements ChannelController {
 				channel, messageNumber, false, 
 				seqno, buffer.remaining());
 		
-		seqno += buffer.remaining();
+		incrementSequenceNumber(buffer.remaining());
 		
 		Frame frame = new Frame(header, buffer);
 		enqueueFrame(frame);
 		int count = sendFrames(transport);
 		LOG.debug("sendRPY caused " + count + " frames to be sent");
 	}
-	
-	long id;
 	
 	public synchronized void checkFrame(long seqno, int payloadSize) {
 		if (seqno != window.getPosition()) {
