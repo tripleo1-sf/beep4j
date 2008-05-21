@@ -117,5 +117,14 @@ public class SlidingWindowTest extends TestCase {
 		assertEquals(50, window.remaining());
 		assertEquals(SlidingWindow.MAX - 10, window.getStart());
 	}
+	
+	public void testEndAndPositionZero() throws Exception {
+		SlidingWindow window = new SlidingWindow(SlidingWindow.MAX - 9, 10);
+		window.moveBy(10);
+		assertEquals(0, window.remaining());
+		assertEquals(0, window.getEnd());
+		assertEquals(0, window.getPosition());
+		assertEquals(SlidingWindow.MAX - 9, window.getStart());
+	}
 
 }

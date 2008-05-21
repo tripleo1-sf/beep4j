@@ -106,7 +106,12 @@ final class SlidingWindow {
 	}
 	
 	int remaining() {
-		return (int) (getEnd() - position);
+		long end = getEnd();
+		if (end > position) {
+			return (int) (end - position);
+		} else {
+			return (int) (modulo - position + end);
+		}
 	}
 	
 	@Override
