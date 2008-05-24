@@ -65,7 +65,7 @@ public class DefaultChannelController implements ChannelController {
 		return nextSeqno;
 	}
 
-	public void updateSendWindow(long ackno, int size) {
+	public synchronized void updateSendWindow(long ackno, int size) {
 		LOG.debug("update send window: ackno=" + ackno + ",window=" + size);
 		senderWindow.slide(ackno, size);
 		sendFrames(transport);
@@ -75,74 +75,79 @@ public class DefaultChannelController implements ChannelController {
 		LOG.debug("sendANS to message " + messageNumber + " with answer number "
 				+ answerNumber + " on channel " + channel);
 		ByteBuffer buffer = message.asByteBuffer();
-		DataHeader header = new ANSHeader(
-				channel, messageNumber, false, 
-				seqno, 
-				buffer.remaining(), answerNumber);
 
-		incrementSequenceNumber(buffer.remaining());
-		
-		Frame frame = new Frame(header, buffer);
-		enqueueFrame(frame);
-		sendFrames(transport);
+		synchronized (this) {
+			DataHeader header = new ANSHeader(
+					channel, messageNumber, false, 
+					seqno, 
+					buffer.remaining(), answerNumber);
+			Frame frame = new Frame(header, buffer);
+			incrementSequenceNumber(buffer.remaining());
+			enqueueFrame(frame);
+			sendFrames(transport);
+		}
 	}
 	
 	public void sendERR(int messageNumber, Message message) {
 		LOG.debug("sendERR to message " + messageNumber + " on channel " + channel);
 		ByteBuffer buffer = message.asByteBuffer();
-		DataHeader header = new DataHeader(
-				MessageType.ERR,
-				channel, messageNumber, false, 
-				seqno, buffer.remaining());
 		
-		incrementSequenceNumber(buffer.remaining());
-		
-		Frame frame = new Frame(header, buffer);
-		enqueueFrame(frame);
-		sendFrames(transport);
+		synchronized (this) {
+			DataHeader header = new DataHeader(
+					MessageType.ERR,
+					channel, messageNumber, false, 
+					seqno, buffer.remaining());			
+			Frame frame = new Frame(header, buffer);
+			incrementSequenceNumber(buffer.remaining());		
+			enqueueFrame(frame);
+			sendFrames(transport);
+		}
 	}
 	
 	public void sendMSG(int messageNumber, Message message) {
 		LOG.debug("sendMSG with message number " + messageNumber + " on channel " + channel);
 		ByteBuffer buffer = message.asByteBuffer();
-		DataHeader header = new DataHeader(
-				MessageType.MSG,
-				channel, messageNumber, false, 
-				seqno, buffer.remaining());
 		
-		incrementSequenceNumber(buffer.remaining());
-		
-		Frame frame = new Frame(header, buffer);
-		enqueueFrame(frame);
-		sendFrames(transport);
+		synchronized (this) {
+			DataHeader header = new DataHeader(
+					MessageType.MSG,
+					channel, messageNumber, false, 
+					seqno, buffer.remaining());			
+			Frame frame = new Frame(header, buffer);
+			incrementSequenceNumber(buffer.remaining());
+			enqueueFrame(frame);
+			sendFrames(transport);
+		}
 	}
 	
 	public void sendNUL(int messageNumber) {
 		LOG.debug("sendNUL to message " + messageNumber + " on channel " + channel);
-		DataHeader header = new DataHeader(
-				MessageType.NUL,
-				channel, messageNumber, false, 
-				seqno, 0);
-		
-		Frame frame = new Frame(header, ByteBuffer.allocate(0));
-		enqueueFrame(frame);
-		sendFrames(transport);
+		synchronized (this) {
+			DataHeader header = new DataHeader(
+					MessageType.NUL,
+					channel, messageNumber, false, 
+					seqno, 0);
+			Frame frame = new Frame(header, ByteBuffer.allocate(0));
+			enqueueFrame(frame);
+			sendFrames(transport);
+		}
 	}
 	
 	public void sendRPY(int messageNumber, Message message) {
 		LOG.debug("sendRPY to message " + messageNumber + " on channel " + channel);
 		ByteBuffer buffer = message.asByteBuffer();
-		DataHeader header = new DataHeader(
-				MessageType.RPY,
-				channel, messageNumber, false, 
-				seqno, buffer.remaining());
-		
-		incrementSequenceNumber(buffer.remaining());
-		
-		Frame frame = new Frame(header, buffer);
-		enqueueFrame(frame);
-		int count = sendFrames(transport);
-		LOG.debug("sendRPY caused " + count + " frames to be sent");
+				
+		synchronized (this) {
+			DataHeader header = new DataHeader(
+					MessageType.RPY,
+					channel, messageNumber, false, 
+					seqno, buffer.remaining());
+			Frame frame = new Frame(header, buffer);
+			incrementSequenceNumber(buffer.remaining());
+			enqueueFrame(frame);
+			int count = sendFrames(transport);
+			LOG.debug("sendRPY caused " + count + " frames to be sent");
+		}
 	}
 	
 	public synchronized void checkFrame(long seqno, int payloadSize) {
@@ -156,7 +161,7 @@ public class DefaultChannelController implements ChannelController {
 		}
 	}
 	
-	public void frameReceived(long seqno, int size) {
+	public synchronized void frameReceived(long seqno, int size) {
 		if (seqno != window.getPosition()) {
 			throw new IllegalStateException("sequence number " + seqno + " does not "
 					+ "match expected sequence number " + window.getPosition());
