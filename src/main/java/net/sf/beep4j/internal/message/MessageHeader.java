@@ -20,33 +20,36 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.sf.beep4j.Message;
 import net.sf.beep4j.internal.message.contenttype.ContentTypeParser;
 import net.sf.beep4j.internal.message.contenttype.ParseException;
+import net.sf.beep4j.internal.util.Assert;
 
 public class MessageHeader {
 	
+    private static final String DEFAULT_CONTENT_TYPE = "application";
+
+    private static final String DEFAULT_CONTENT_SUBTYPE = "octet-stream";
+
+    private static final String DEFAULT_CHARSET = "UTF-8";
+
 	private static final String EOL = "\r\n";
 
-	private final Map<String,String> header;
+	private final Map<String,String> header = new LinkedHashMap<String,String>();;
 	
 	private ByteBuffer buffer;
 	
-	private String type = "application";
+    private String type = DEFAULT_CONTENT_TYPE;
 	
-	private String subtype = "octet-stream";
+    private String subtype = DEFAULT_CONTENT_SUBTYPE;
 	
 	private String charset = "UTF-8";
 	
-	private String transferEncoding = "binary";
-	
-	public MessageHeader() {
-		this.header = new HashMap<String,String>();
-	}
+    private String transferEncoding = Message.BINARY_TRANSFER_ENCODING;
 	
 	public void addHeader(String name, String value) {
 		if (Message.CONTENT_TYPE.equalsIgnoreCase(name)) {
@@ -59,12 +62,14 @@ public class MessageHeader {
 	}
 	
 	public void setContentType(String type, String subtype) {
-		this.type = type.toLowerCase();
-		this.subtype = subtype.toLowerCase();
-	}
+		Assert.notNull("type", type);
+		Assert.notNull("subtype", subtype);
+       	this.type = type.toLowerCase();
+       	this.subtype = subtype.toLowerCase();
+    }
 	
 	public String getContentType() {
-		return type + "/" + subtype;
+        return type + "/" + subtype;
 	}
 	
 	public void setCharset(String name) {
@@ -92,11 +97,10 @@ public class MessageHeader {
 			this.subtype = parser.getSubType().toLowerCase();
 			this.charset = (String) parser.getParameters().get("charset");
 		
-			if (this.charset == null && "application/beep+xml".equals(getContentType())) {
-				this.charset = "UTF-8";
-			} else if (this.charset == null && "text".equals(type)) {
-				this.charset = "US-ASCII";
+            if (this.charset == null) {
+                this.charset = DEFAULT_CHARSET;
 			}
+            
 		} catch (ParseException e) {
 			// TODO: proper exception type
 			throw new IllegalArgumentException(e);
@@ -123,17 +127,24 @@ public class MessageHeader {
 		return header.get(name);
 	}
 	
+	private boolean hasDefaultContentType() {
+		return DEFAULT_CONTENT_TYPE.equals(type)
+		    && DEFAULT_CONTENT_SUBTYPE.equals(subtype);
+	}
+	
 	public synchronized ByteBuffer asByteBuffer() {
 		if (buffer == null) {
 			StringBuilder builder = new StringBuilder();
 			
-			builder.append("Content-Type: ");
-			builder.append(getContentType());
-			if (!"UTF-8".equals(charset)) {
-				builder.append("; charset=");
-				builder.append(charset);
+			if (!hasDefaultContentType()) {
+            	builder.append("Content-Type: ");
+            	builder.append(getContentType());
+            	if (!DEFAULT_CHARSET.equals(charset)) {
+                	builder.append("; charset=");
+                	builder.append(charset);
+                }
+            	builder.append(EOL);
 			}
-			builder.append(EOL);
 			
 			if (!Message.BINARY_TRANSFER_ENCODING.equals(getTransferEncoding())) {
 				builder.append("Content-Transfer-Encoding: ");
